@@ -1,0 +1,12 @@
+// Deploy with: firebase deploy --only firestore:rules
+// See firestore.rules in the repo root — this file is kept for reference only.
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /teams/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

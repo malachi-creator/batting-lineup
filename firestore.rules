@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// Rec-league trust model: open read/write on team data, with basic shape checks
+// on writes. Team join codes gate Coach Z server-side, not these rules.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /teams/{teamId} {
+      allow read: if true;
+      allow create: if validTeam(request.resource.data);
+      allow update: if validTeam(request.resource.data);
+      allow delete: if false;
+    }
+
+    match /teams/{teamId}/{document=**} {
+      allow read: if true;
+      allow delete: if true;
+      allow create, update: if request.resource.data.size() <= 32;
+    }
+  }
+
+  function validTeam(data) {
+    return data.keys().hasAll(['name', 'code'])
+      && data.name is string && data.name.size() > 0 && data.name.size() <= 80
+      && data.code is string && data.code.size() >= 4 && data.code.size() <= 8;
+  }
+}
