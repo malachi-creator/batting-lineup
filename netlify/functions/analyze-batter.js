@@ -1,6 +1,6 @@
 // Coach Z — per-player swing analysis. Anthropic key stays server-side.
 
-const { verifyTeam, corsHeaders } = require("./_shared");
+const { verifyTeam, corsHeaders } = require("../lib/shared");
 
 const SYSTEM_PROMPT = `You are a slow-pitch softball hitting coach analyzing recreational league
 data. You receive a player's at-bat log: result, field zone, contact

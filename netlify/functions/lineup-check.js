@@ -1,6 +1,6 @@
 // Coach Z — team-level batting order review.
 
-const { verifyTeam, corsHeaders } = require("./_shared");
+const { verifyTeam, corsHeaders } = require("../lib/shared");
 
 const SYSTEM_PROMPT = `You are a slow-pitch softball coach reviewing a rec-league batting order.
 You receive each player's current lineup slot and season stats (PA, OBP,

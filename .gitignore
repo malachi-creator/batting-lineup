@@ -5,6 +5,11 @@ dist
 netlify-drop
 .env
 .env.local
+.env.*
+!.env.example
 netlify.env
+*.env
+!.env.example
 .DS_Store
 .firebase
+.claude

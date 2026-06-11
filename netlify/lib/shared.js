@@ -1,9 +1,9 @@
-// Shared helpers for Coach Z Netlify functions.
+// Shared helpers for Coach Z Netlify functions (not deployed as its own function).
 
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
 const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
-export async function verifyTeam(teamId, teamCode) {
+async function verifyTeam(teamId, teamCode) {
   if (!FIREBASE_PROJECT_ID || !FIREBASE_API_KEY) {
     console.error("FIREBASE_PROJECT_ID and FIREBASE_API_KEY must be set in Netlify env");
     return false;
@@ -20,8 +20,10 @@ export async function verifyTeam(teamId, teamCode) {
   return fields.code && fields.code.stringValue === String(teamCode);
 }
 
-export const corsHeaders = {
+const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type",
   "Content-Type": "application/json",
 };
+
+module.exports = { verifyTeam, corsHeaders };
