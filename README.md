@@ -105,8 +105,10 @@ VITE_MOCK=1 npm run dev
 ```
 teams/{teamId}                       name, code (join number), createdAt
 teams/{teamId}/players/{playerId}    name, orderIndex, active
+teams/{teamId}/schedule/{scheduleId} date, opponent?, createdAt
 teams/{teamId}/games/{gameId}        date, opponent?, present[], final, usScore?, themScore?, result? (W|L|T),
-    leagueDivision: "D", hrLimit: 2 — JC Parks D league HR cap (always applied)
+    leagueDivision: "D", hrLimit: 2 — JC Parks D league HR cap (always applied),
+    scheduleId? — links to a schedule entry when started from the calendar
 teams/{teamId}/games/{gameId}/atBats/{abId}
     playerId, seq, result (1B|2B|3B|HR|BB|OUT|ROE|FC) — tuned for slow-pitch rec league,
     zone (LF|CF|RF|IF_L|IF_M|IF_R|null), contact (HARD|MED|WEAK|null),
@@ -127,6 +129,15 @@ back online; the service worker (`public/sw.js`) caches the app shell and fonts
 so the app opens in the dugout.
 
 note: node_modules is symlinked to node_modules.nosync so iCloud doesn't sync it.
+
+## Schedule & auto-start
+
+- **Schedule** tab — month calendar for the season; tap a day to add or view games.
+- **Auto-start** (on by default) — on game day, opening the app creates a live game
+  from today's schedule entry (all active players marked present). Toggle off in
+  Schedule if you prefer to start manually from the Game tab.
+- Manual starts on a scheduled day link the game via `scheduleId` so the calendar
+  shows played/live status.
 
 ## JC Parks D league
 

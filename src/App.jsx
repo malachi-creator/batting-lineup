@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  addDoc,
   doc,
   getDocs,
   onSnapshot,
   orderBy,
   query,
+  serverTimestamp,
   writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebase.js";
@@ -13,11 +15,13 @@ import GameTab from "./components/GameTab.jsx";
 import StatsTab from "./components/StatsTab.jsx";
 import RosterTab from "./components/RosterTab.jsx";
 import MeTab from "./components/MeTab.jsx";
+import ScheduleTab from "./components/ScheduleTab.jsx";
 import TeamGate from "./components/TeamGate.jsx";
 import CatchUpTab from "./components/CatchUpTab.jsx";
 import { parseCatchUpHash, clearCatchUpHash } from "./catchUp.js";
 import { useSyncStatus } from "./hooks/useSyncStatus.js";
 import { tap } from "./haptics.js";
+import { buildGameFromSchedule, getAutoStartEnabled, shouldAutoStart } from "./schedule.js";
 
 const ROSTER = [
   "Malachi",
@@ -42,12 +46,14 @@ export default function App() {
   const [tab, setTab] = useState("game");
   const [players, setPlayers] = useState(null);
   const [games, setGames] = useState(null);
+  const [schedule, setSchedule] = useState(null);
   const [abByGame, setAbByGame] = useState({});
   const [toast, setToast] = useState(null);
   const [installEvt, setInstallEvt] = useState(null);
   const [dbError, setDbError] = useState(null);
   const [catchUp, setCatchUp] = useState(() => parseCatchUpHash(window.location.hash));
   const seeded = useRef(false);
+  const autoStarted = useRef(false);
   const toastTimer = useRef(null);
 
   useEffect(() => {
@@ -81,6 +87,15 @@ export default function App() {
     const q = query(teamCol("games"), orderBy("date", "desc"));
     return onSnapshot(q, (snap) => {
       setGames(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    }, (err) => setDbError(err.code || err.message));
+  }, [team]);
+
+  // Season schedule
+  useEffect(() => {
+    if (!team) return;
+    const q = query(teamCol("schedule"), orderBy("date", "asc"));
+    return onSnapshot(q, (snap) => {
+      setSchedule(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     }, (err) => setDbError(err.code || err.message));
   }, [team]);
 
@@ -127,6 +142,26 @@ export default function App() {
   const allAtBats = useMemo(() => Object.values(abByGame).flat(), [abByGame]);
   const syncStatus = useSyncStatus(!!team);
 
+  // Auto-start today's scheduled game when the app opens
+  useEffect(() => {
+    if (!players || !games || !schedule || autoStarted.current) return;
+    const entry = shouldAutoStart({
+      schedule,
+      games,
+      activeGame,
+      autoStartEnabled: getAutoStartEnabled(),
+    });
+    if (!entry) return;
+    autoStarted.current = true;
+    const present = players.filter((p) => p.active !== false).map((p) => p.id);
+    addDoc(teamCol("games"), {
+      ...buildGameFromSchedule(entry, present),
+      createdAt: serverTimestamp(),
+    }).then(() => {
+      showToast(`Game started vs ${entry.opponent || "opponent"}`);
+    });
+  }, [players, games, schedule, activeGame]);
+
   const syncLabel = { saved: "Saved", syncing: "Syncing…", offline: "Offline" }[syncStatus];
   const syncClass = syncStatus;
 
@@ -151,7 +186,7 @@ export default function App() {
     );
   }
 
-  if (!players || !games) {
+  if (!players || !games || !schedule) {
     return (
       <div className="screen" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
         <span className="spin" /> Loading…
@@ -223,7 +258,17 @@ export default function App() {
         )}
 
         {tab === "game" && (
-          <GameTab players={players} games={games} activeGame={activeGame} abByGame={abByGame} showToast={showToast} />
+          <GameTab
+            players={players}
+            games={games}
+            schedule={schedule}
+            activeGame={activeGame}
+            abByGame={abByGame}
+            showToast={showToast}
+          />
+        )}
+        {tab === "schedule" && (
+          <ScheduleTab schedule={schedule} games={games} showToast={showToast} />
         )}
         {tab === "stats" && (
           <StatsTab players={players} games={games} allAtBats={allAtBats} showToast={showToast} hasActiveGame={!!activeGame} />
@@ -237,6 +282,7 @@ export default function App() {
       <nav className="tabbar">
         {[
           ["game", "Game"],
+          ["schedule", "Schedule"],
           ["stats", "Stats"],
           ["me", "Me"],
           ["roster", "Roster"],

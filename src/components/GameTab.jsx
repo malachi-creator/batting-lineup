@@ -14,8 +14,9 @@ import AtBatEditor, { updateAtBat } from "./AtBatEditor.jsx";
 import { Dialog, PromptDialog } from "./Dialog.jsx";
 import { BALL_TYPE_LABELS, BALL_TYPES, GAME_RESULT_LABELS, OUT_TYPE_LABELS, OUT_TYPES, RESULT_LABELS, ZONE_LABELS, formatAbResult, needsBallType, needsPlacement, resultChipClass, resultChipCode } from "../stats.js";
 import { tap } from "../haptics.js";
+import { findScheduleForDate, formatScheduleDate, gameForSchedule, todayISO } from "../schedule.js";
 
-export default function GameTab({ players, games, activeGame, abByGame, showToast }) {
+export default function GameTab({ players, games, schedule, activeGame, abByGame, showToast }) {
   if (activeGame) {
     return (
       <AtBatLogger
@@ -26,13 +27,16 @@ export default function GameTab({ players, games, activeGame, abByGame, showToas
       />
     );
   }
-  return <GameSetup players={players} games={games} showToast={showToast} />;
+  return <GameSetup players={players} games={games} schedule={schedule} showToast={showToast} />;
 }
 
-function GameSetup({ players, games, showToast }) {
+function GameSetup({ players, games, schedule, showToast }) {
   const active = players.filter((p) => p.active !== false);
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [opponent, setOpponent] = useState("");
+  const today = todayISO();
+  const todayEntry = findScheduleForDate(schedule, today);
+  const todayLinked = todayEntry ? gameForSchedule(games, todayEntry.id) : null;
+  const [date, setDate] = useState(() => today);
+  const [opponent, setOpponent] = useState(() => todayEntry?.opponent || "");
   const [present, setPresent] = useState(() => new Set(active.map((p) => p.id)));
 
   const toggle = (id) => {
@@ -46,6 +50,8 @@ function GameSetup({ players, games, showToast }) {
 
   const start = () => {
     tap(20);
+    const linkedEntry = findScheduleForDate(schedule, date);
+    const alreadyLinked = linkedEntry ? gameForSchedule(games, linkedEntry.id) : null;
     addDoc(teamCol("games"), {
       date,
       opponent: opponent.trim() || null,
@@ -56,6 +62,7 @@ function GameSetup({ players, games, showToast }) {
       usScore: null,
       themScore: null,
       result: null,
+      scheduleId: linkedEntry && !alreadyLinked ? linkedEntry.id : null,
       createdAt: serverTimestamp(),
     });
   };
@@ -63,9 +70,28 @@ function GameSetup({ players, games, showToast }) {
   return (
     <div>
       <h2 style={{ fontSize: 26, marginBottom: 12 }}>New Game</h2>
+      {todayEntry && !todayLinked && (
+        <div className="schedule-today-banner">
+          <span className="grow">
+            <b>Today:</b> vs {todayEntry.opponent || "TBD"}
+            <span className="muted" style={{ display: "block", fontSize: 13, marginTop: 2 }}>
+              {formatScheduleDate(todayEntry.date)} · pre-filled below
+            </span>
+          </span>
+        </div>
+      )}
       <div className="card">
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => {
+              const d = e.target.value;
+              setDate(d);
+              const entry = findScheduleForDate(schedule, d);
+              if (entry?.opponent) setOpponent(entry.opponent);
+            }}
+          />
           <input placeholder="Opponent (optional)" value={opponent} onChange={(e) => setOpponent(e.target.value)} />
         </div>
         <p className="muted" style={{ margin: "10px 0 0", fontSize: 13 }}>

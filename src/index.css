@@ -113,10 +113,10 @@ h3 {
   flex: 1;
   min-height: 60px;
   font-family: var(--font-cond);
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   color: var(--text-dim);
 }
 
@@ -1012,4 +1012,103 @@ table.stats td.name {
     max-width: 520px;
     margin: 0 auto;
   }
+}
+
+/* Schedule calendar */
+.schedule-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.schedule-today-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(61, 220, 132, 0.1);
+  border: 1px solid rgba(61, 220, 132, 0.35);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.calendar-card {
+  padding: 12px;
+}
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.cal-title {
+  font-family: var(--font-cond);
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.cal-weekdays span {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-family: var(--font-cond);
+  font-size: 16px;
+  font-weight: 600;
+  background: var(--navy-3);
+  border: 1px solid transparent;
+  color: var(--text);
+}
+
+.cal-cell.empty {
+  background: transparent;
+  border: none;
+  pointer-events: none;
+}
+
+.cal-cell.has-game {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.cal-cell.today {
+  background: rgba(36, 158, 255, 0.15);
+}
+
+.cal-cell.selected {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.cal-cell:active {
+  transform: scale(0.95);
 }
