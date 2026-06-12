@@ -11,7 +11,7 @@ import { LEAGUE_DIVISION, LEAGUE_HR_LIMIT, LEAGUE_LABEL, countGameHomeRuns, game
 import FieldDiagram from "./FieldDiagram.jsx";
 import AtBatEditor, { updateAtBat } from "./AtBatEditor.jsx";
 import { Dialog, PromptDialog } from "./Dialog.jsx";
-import { GAME_RESULT_LABELS, OUT_TYPE_LABELS, OUT_TYPES, RESULT_LABELS, ZONE_LABELS, formatAbResult, needsPlacement, resultChipClass, resultChipCode } from "../stats.js";
+import { BALL_TYPE_LABELS, BALL_TYPES, GAME_RESULT_LABELS, OUT_TYPE_LABELS, OUT_TYPES, RESULT_LABELS, ZONE_LABELS, formatAbResult, needsPlacement, resultChipClass, resultChipCode } from "../stats.js";
 import { tap } from "../haptics.js";
 
 export default function GameTab({ players, games, activeGame, abByGame, showToast }) {
@@ -93,7 +93,7 @@ function GameSetup({ players, games, showToast }) {
   );
 }
 
-const EMPTY_PENDING = { result: null, outType: null, zone: null, loc: null, contact: null, rbi: 0, twoOuts: false };
+const EMPTY_PENDING = { result: null, outType: null, ballType: null, zone: null, loc: null, contact: null, rbi: 0, twoOuts: false };
 
 function AtBatLogger({ game, players, atBats, showToast }) {
   const [pending, setPending] = useState(EMPTY_PENDING);
@@ -136,6 +136,7 @@ function AtBatLogger({ game, players, atBats, showToast }) {
   const save = (fields) => {
     tap(20);
     const ab = { ...pending, ...fields };
+    const placement = needsPlacement(ab.result);
     const nextSeq = atBats.length === 0 ? 0 : Math.max(...atBats.map((a) => a.seq ?? 0)) + 1;
     addDoc(teamCol("games", game.id, "atBats"), {
       playerId: batter.id,
@@ -143,7 +144,8 @@ function AtBatLogger({ game, players, atBats, showToast }) {
       result: ab.result,
       zone: ab.zone || null,
       loc: ab.loc || null,
-      contact: ab.contact || null,
+      contact: placement ? ab.contact || null : null,
+      ballType: placement ? ab.ballType || null : null,
       outType: ab.result === "OUT" ? ab.outType || null : null,
       rbi: ab.rbi || 0,
       twoOuts: !!ab.twoOuts,
@@ -201,7 +203,7 @@ function AtBatLogger({ game, players, atBats, showToast }) {
 
   const pickHr = () => {
     if (hrAtLimit) {
-      save({ result: "OUT", outType: "XHR", zone: null, loc: null, contact: null });
+      save({ result: "OUT", outType: "XHR", zone: null, loc: null, contact: null, ballType: null });
       return;
     }
     choose({ result: "HR", outType: null });
@@ -214,7 +216,8 @@ function AtBatLogger({ game, players, atBats, showToast }) {
   else if (pending.result === "OUT" && pending.outType && pending.outType !== "K" && !pending.loc) step = "placement";
   else if (pending.result === "OUT" && pending.outType && pending.outType !== "K" && pending.loc) step = "outConfirm";
   else if (inPlacementFlow && !pending.loc) step = "placement";
-  else if (inPlacementFlow && pending.loc) step = "contact";
+  else if (inPlacementFlow && pending.loc && !pending.ballType) step = "ballType";
+  else if (inPlacementFlow && pending.loc && pending.ballType) step = "contact";
 
   const placeBall = (zone, loc) => choose({ zone, loc });
   const placementLabel = pending.loc ? "Tap again to move the pin" : "Tap exactly where the ball landed";
@@ -291,9 +294,28 @@ function AtBatLogger({ game, players, atBats, showToast }) {
         </>
       )}
 
+      {step === "ballType" && (
+        <>
+          <div className="step-label">
+            How did it go? <span style={{ color: "var(--text)" }}>{RESULT_LABELS[pending.result]}{pending.zone ? ` · ${ZONE_LABELS[pending.zone]}` : ""}</span>
+          </div>
+          <FieldDiagram marker={pending.loc} onZone={placeBall} />
+          <div className="btn-grid">
+            {BALL_TYPES.map((b) => (
+              <button key={b} className="btn" onClick={() => choose({ ballType: b })}>
+                {BALL_TYPE_LABELS[b]}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
       {step === "contact" && inPlacementFlow && (
         <>
-          <div className="step-label">Contact — {RESULT_LABELS[pending.result]}{pending.zone ? ` · ${ZONE_LABELS[pending.zone]}` : ""}</div>
+          <div className="step-label">
+            Contact — {BALL_TYPE_LABELS[pending.ballType]} {RESULT_LABELS[pending.result].toLowerCase()}
+            {pending.zone ? ` · ${ZONE_LABELS[pending.zone]}` : ""}
+          </div>
           <FieldDiagram marker={pending.loc} onZone={placeBall} />
           <p className="muted" style={{ textAlign: "center", margin: "8px 0 10px", fontSize: 13 }}>Pin shows where it landed · tap to adjust · how well did you drive the arc?</p>
           <div className="btn-grid cols3">

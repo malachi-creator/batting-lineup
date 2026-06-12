@@ -4,6 +4,8 @@ import { teamDoc } from "../team.js";
 import FieldDiagram from "./FieldDiagram.jsx";
 import { Dialog } from "./Dialog.jsx";
 import {
+  BALL_TYPE_LABELS,
+  BALL_TYPES,
   CONTACT_LABELS,
   EDIT_OUT_TYPES,
   OUT_TYPE_LABELS,
@@ -34,6 +36,7 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
     onSave({
       result: draft.result,
       outType: draft.result === "OUT" ? draft.outType : null,
+      ballType: inPlacementFlow ? draft.ballType || null : null,
       zone: draft.zone || null,
       loc: draft.loc || null,
       contact: inPlacementFlow ? draft.contact || "MED" : null,
@@ -56,6 +59,7 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
               set({
                 result: r,
                 outType: r === "OUT" ? draft.outType : null,
+                ballType: PLACEMENT_RESULTS.includes(r) ? draft.ballType : null,
                 zone: r === "BB" || r === "OUT" && !draft.outType ? null : draft.zone,
                 loc: r === "BB" ? null : draft.loc,
                 contact: PLACEMENT_RESULTS.includes(r) ? draft.contact : null,
@@ -88,6 +92,19 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
       )}
 
       {inPlacementFlow && draft.loc && (
+        <>
+          <div className="step-label">How did it go?</div>
+          <div className="btn-grid cols3" style={{ marginBottom: 10 }}>
+            {BALL_TYPES.map((b) => (
+              <button key={b} className={`btn${draft.ballType === b ? " selected" : ""}`} onClick={() => { tap(); set({ ballType: b }); }}>
+                {BALL_TYPE_LABELS[b]}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {inPlacementFlow && draft.loc && draft.ballType && (
         <>
           <div className="step-label">Contact</div>
           <div className="btn-grid cols3" style={{ marginBottom: 10 }}>

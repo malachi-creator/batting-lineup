@@ -52,6 +52,23 @@ export const ZONE_LABELS = {
 
 export const CONTACT_LABELS = { HARD: "Hard", MED: "Medium", WEAK: "Weak" };
 
+// How a reached ball traveled (hits + ROE/FC). Same codes as out types, separate field.
+export const BALL_TYPE_LABELS = {
+  GO: "Ground",
+  FO: "Fly",
+  LO: "Line",
+  PO: "Pop-up",
+};
+
+export const BALL_TYPES = ["GO", "FO", "LO", "PO"];
+
+export const BALL_TYPE_SHORT = {
+  GO: "Ground",
+  FO: "Fly",
+  LO: "Line",
+  PO: "Pop-up",
+};
+
 export function isHit(ab) {
   return HIT_RESULTS.includes(ab.result);
 }
@@ -87,7 +104,11 @@ export function resultChipCode(ab) {
 /** Human-readable result for toasts and meta lines. */
 export function formatAbResult(ab) {
   if (ab.result === "OUT") return OUT_TYPE_LABELS[ab.outType] || RESULT_LABELS.OUT;
-  return RESULT_LABELS[ab.result] || ab.result;
+  const base = RESULT_LABELS[ab.result] || ab.result;
+  if (ab.ballType && BALL_TYPE_SHORT[ab.ballType] && isReached(ab)) {
+    return `${BALL_TYPE_SHORT[ab.ballType]} ${base.toLowerCase()}`;
+  }
+  return base;
 }
 
 // Standard-ish scoring: ROE/FC count as an at-bat but not a hit or OBP reach.
@@ -149,6 +170,7 @@ export function compactAtBats(atBats, gameDates) {
     if (a.zone) c.z = a.zone;
     if (a.loc) c.loc = [a.loc.a, a.loc.d];
     if (a.contact) c.c = a.contact;
+    if (a.ballType) c.b = a.ballType;
     if (a.outType) c.o = a.outType;
     if (a.rbi) c.rbi = a.rbi;
     if (a.twoOuts) c.two_outs = true;

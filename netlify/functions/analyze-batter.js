@@ -22,7 +22,9 @@ Pattern examples to look for:
 
 Result codes: 1B/2B/3B/HR are hits, BB is a walk, OUT is an out (with
 out-type o: K/GO/FO/PO/LO), ROE is reached on error, FC is fielder's
-choice (batter safe, another runner out).
+choice (batter safe, another runner out). Reached balls may also carry
+ball-type b: GO/FO/LO/PO (ground/fly/line/pop) — e.g. a ground single
+is 1B with b=GO.
 
 Rules: 120 words max. Lead with the single biggest pattern. Give one
 specific drill or swing thought per pattern. Encouraging but honest.
