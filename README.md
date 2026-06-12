@@ -106,7 +106,7 @@ VITE_MOCK=1 npm run dev
 teams/{teamId}                       name, code (join number), createdAt
 teams/{teamId}/players/{playerId}    name, orderIndex, active
 teams/{teamId}/games/{gameId}        date, opponent?, present[], final, usScore?, themScore?, result? (W|L|T),
-    leagueDivision? (C|D|null), hrLimit? (4|2|null) — JC Parks HR cap per game
+    leagueDivision: "D", hrLimit: 2 — JC Parks D league HR cap (always applied)
 teams/{teamId}/games/{gameId}/atBats/{abId}
     playerId, seq, result (1B|2B|3B|HR|BB|OUT|ROE|FC) — tuned for slow-pitch rec league,
     zone (LF|CF|RF|IF_L|IF_M|IF_R|null), contact (HARD|MED|WEAK|null),
@@ -127,15 +127,10 @@ so the app opens in the dugout.
 
 note: node_modules is symlinked to node_modules.nosync so iCloud doesn't sync it.
 
-## JC Parks (Jefferson City) summer softball
+## JC Parks D league
 
-Game setup can tag a **league division** so team HR limits match the [JC Parks adult summer packet](https://www.jcparks.com/wp-content/uploads/Summer-Softball-Packet-2026.pdf):
+This team plays **JC Parks Jefferson City D league** only ([2026 packet](https://www.jcparks.com/wp-content/uploads/Summer-Softball-Packet-2026.pdf)). Every game automatically uses the **2 team HR / game** cap — HRs beyond that are logged as **HR limit out** (counts as an out, not a hit).
 
-| Division | Team HR limit / game | Over limit |
-|----------|----------------------|------------|
-| C | 4 | Logged as **HR limit out** (counts as an out, not a hit) |
-| D | 2 | Same |
+During a live game the app shows **Team HRs X/2** and switches the Home Run button to **HR (limit out)** once the cap is hit.
 
-During a live game the app shows **Team HRs X/Y** and switches the Home Run button to **HR (limit out)** when the cap is reached.
-
-Other JC Parks rules (1-1 count, no stealing, continuous batting order, co-rec walk awards) are enforced on the field — this app focuses on per-batter results and team HR tracking.
+Other JC Parks rules (1-1 count, no stealing, continuous batting order) are enforced on the field — this app focuses on per-batter results and team HR tracking.

@@ -7,7 +7,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { teamCol, teamDoc } from "../team.js";
-import { LEAGUE_DIVISIONS, countGameHomeRuns } from "../league.js";
+import { LEAGUE_DIVISION, LEAGUE_HR_LIMIT, LEAGUE_LABEL, countGameHomeRuns, gameHrLimit } from "../league.js";
 import FieldDiagram from "./FieldDiagram.jsx";
 import AtBatEditor, { updateAtBat } from "./AtBatEditor.jsx";
 import { Dialog, PromptDialog } from "./Dialog.jsx";
@@ -32,7 +32,6 @@ function GameSetup({ players, games, showToast }) {
   const active = players.filter((p) => p.active !== false);
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [opponent, setOpponent] = useState("");
-  const [division, setDivision] = useState("");
   const [present, setPresent] = useState(() => new Set(active.map((p) => p.id)));
 
   const toggle = (id) => {
@@ -46,12 +45,11 @@ function GameSetup({ players, games, showToast }) {
 
   const start = () => {
     tap(20);
-    const league = LEAGUE_DIVISIONS.find((d) => d.value === division) || LEAGUE_DIVISIONS[0];
     addDoc(teamCol("games"), {
       date,
       opponent: opponent.trim() || null,
-      leagueDivision: league.value || null,
-      hrLimit: league.hrLimit,
+      leagueDivision: LEAGUE_DIVISION,
+      hrLimit: LEAGUE_HR_LIMIT,
       present: active.filter((p) => present.has(p.id)).map((p) => p.id),
       final: false,
       usScore: null,
@@ -69,17 +67,9 @@ function GameSetup({ players, games, showToast }) {
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           <input placeholder="Opponent (optional)" value={opponent} onChange={(e) => setOpponent(e.target.value)} />
         </div>
-        <label className="field-label" style={{ marginTop: 10 }}>League division</label>
-        <select value={division} onChange={(e) => setDivision(e.target.value)} style={{ width: "100%" }}>
-          {LEAGUE_DIVISIONS.map((d) => (
-            <option key={d.value || "none"} value={d.value}>{d.label}</option>
-          ))}
-        </select>
-        {division && (
-          <p className="muted" style={{ margin: "8px 0 0", fontSize: 13 }}>
-            JC Parks rule: HRs over the limit count as an out (not a hit).
-          </p>
-        )}
+        <p className="muted" style={{ margin: "10px 0 0", fontSize: 13 }}>
+          {LEAGUE_LABEL} · {LEAGUE_HR_LIMIT} team HRs per game (over limit = out)
+        </p>
       </div>
       <div className="card">
         <h3>Who's here? ({present.size})</h3>
@@ -125,8 +115,8 @@ function AtBatLogger({ game, players, atBats, showToast }) {
   );
 
   const teamHrs = countGameHomeRuns(atBats);
-  const hrLimit = game.hrLimit ?? null;
-  const hrAtLimit = hrLimit != null && teamHrs >= hrLimit;
+  const hrLimit = gameHrLimit(game);
+  const hrAtLimit = teamHrs >= hrLimit;
 
   if (lineup.length === 0) return <p className="muted">No players marked present — add a sub from the menu.</p>;
 
@@ -159,7 +149,7 @@ function AtBatLogger({ game, players, atBats, showToast }) {
       twoOuts: !!ab.twoOuts,
       createdAt: serverTimestamp(),
     });
-    showToast(`${batter.name}: ${formatAbResult(ab)}${ab.outType === "XHR" ? " · over HR limit" : ab.result === "HR" && hrLimit != null && teamHrs + 1 >= hrLimit ? ` · team at HR limit (${teamHrs + 1}/${hrLimit})` : ""}`);
+    showToast(`${batter.name}: ${formatAbResult(ab)}${ab.outType === "XHR" ? " · over HR limit" : ab.result === "HR" && teamHrs + 1 >= hrLimit ? ` · team at HR limit (${teamHrs + 1}/${hrLimit})` : ""}`);
     reset();
   };
 
@@ -243,7 +233,7 @@ function AtBatLogger({ game, players, atBats, showToast }) {
         {scoreLabel && <div className="score-pill">{scoreLabel}</div>}
         {hrLimit != null && (
           <div className={`hr-pill${hrAtLimit ? " at-limit" : ""}`}>
-            Team HRs {teamHrs}/{hrLimit}
+            Team HRs {teamHrs}/{hrLimit} · D league
             {hrAtLimit && " · next HR is an out"}
           </div>
         )}
@@ -375,7 +365,7 @@ function AtBatLogger({ game, players, atBats, showToast }) {
         {hrLimit != null && (
           <p style={{ margin: "0 0 10px", fontSize: 14 }}>
             Team home runs: <b>{teamHrs}/{hrLimit}</b>
-            {game.leagueDivision && <span className="muted"> · JC Parks {game.leagueDivision}</span>}
+            <span className="muted"> · D league</span>
           </p>
         )}
         <div className="score-row">

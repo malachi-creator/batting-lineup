@@ -1,23 +1,14 @@
-// JC Parks (Jefferson City) adult summer slow-pitch rules baked into game setup.
-// Source: Summer Softball Packet 2026 — USA Softball with local exceptions.
+// JC Parks (Jefferson City) adult summer slow-pitch — D league only.
+// Source: Summer Softball Packet 2026 — 2 team HRs per game, excess = out.
 
-/** Team HR limits per game (excess HRs are outs). */
-export const JC_PARKS_HR_LIMITS = {
-  C: 4,
-  D: 2,
-};
-
-export const LEAGUE_DIVISIONS = [
-  { value: "", label: "No HR limit", hrLimit: null },
-  { value: "C", label: "JC Parks · C (4 HR/game)", hrLimit: 4 },
-  { value: "D", label: "JC Parks · D (2 HR/game)", hrLimit: 2 },
-];
-
-export function hrLimitForDivision(division) {
-  if (!division) return null;
-  return JC_PARKS_HR_LIMITS[division] ?? null;
-}
+export const LEAGUE_DIVISION = "D";
+export const LEAGUE_HR_LIMIT = 2;
+export const LEAGUE_LABEL = "JC Parks D league";
 
 export function countGameHomeRuns(atBats) {
   return atBats.filter((a) => a.result === "HR").length;
+}
+
+export function gameHrLimit(game) {
+  return game?.hrLimit ?? LEAGUE_HR_LIMIT;
 }
