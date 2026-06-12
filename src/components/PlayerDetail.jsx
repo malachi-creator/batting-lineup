@@ -1,10 +1,12 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import FieldDiagram from "./FieldDiagram.jsx";
 import CoachZBlock from "./CoachZ.jsx";
+import AtBatEditor, { updateAtBat } from "./AtBatEditor.jsx";
 import { compactAtBats, computeLine, fmt3, formatAbResult, OUT_TYPE_LABELS, ZONE_LABELS, CONTACT_LABELS, isReachSafe, isReached, resultChipClass, resultChipCode } from "../stats.js";
 import { tap } from "../haptics.js";
 
 export default function PlayerDetail({ player, atBats, allAtBats, gameDates, onBack, backLabel = "← Team", showToast }) {
+  const [editAb, setEditAb] = useState(null);
   const line = useMemo(() => computeLine(atBats), [atBats]);
   const teamLine = useMemo(() => computeLine(allAtBats), [allAtBats]);
 
@@ -145,11 +147,11 @@ export default function PlayerDetail({ player, atBats, allAtBats, gameDates, onB
         <h3>Last {last10.length} at-bats</h3>
         {last10.length === 0 && <p className="muted">Nothing logged yet.</p>}
         {last10.map((a) => (
-          <div className="ab-chip" key={a.id}>
+          <div className="ab-chip row-tap" key={a.id} onClick={() => { tap(); setEditAb(a); }}>
             <span className={`res ${resultChipClass(a)}`}>
               {resultChipCode(a)}
             </span>
-            <span className="meta">
+            <span className="meta grow">
               {formatAbResult(a)}
               {a.zone ? ` · ${ZONE_LABELS[a.zone]}` : ""}
               {a.contact ? ` · ${CONTACT_LABELS[a.contact]}` : ""}
@@ -160,6 +162,14 @@ export default function PlayerDetail({ player, atBats, allAtBats, gameDates, onB
           </div>
         ))}
       </div>
+
+      <AtBatEditor
+        ab={editAb}
+        playerName={player.name}
+        open={!!editAb}
+        onClose={() => setEditAb(null)}
+        onSave={(fields) => updateAtBat(editAb.gameId, editAb.id, fields).then(() => showToast?.("At-bat updated"))}
+      />
     </div>
   );
 }
