@@ -6,6 +6,7 @@ import { tap } from "../haptics.js";
 import {
   calendarDays,
   formatScheduleDate,
+  formatScheduleMeta,
   gameForSchedule,
   getAutoStartEnabled,
   monthLabel,
@@ -24,6 +25,8 @@ export default function ScheduleTab({ schedule, games, showToast }) {
   const [addOpen, setAddOpen] = useState(false);
   const [addDate, setAddDate] = useState(today);
   const [addOpponent, setAddOpponent] = useState("");
+  const [addTime, setAddTime] = useState("");
+  const [addLocation, setAddLocation] = useState("");
   const [autoStart, setAutoStart] = useState(getAutoStartEnabled);
   const [deleteEntry, setDeleteEntry] = useState(null);
 
@@ -50,6 +53,8 @@ export default function ScheduleTab({ schedule, games, showToast }) {
     tap();
     setAddDate(date || today);
     setAddOpponent("");
+    setAddTime("");
+    setAddLocation("");
     setAddOpen(true);
   };
 
@@ -59,6 +64,8 @@ export default function ScheduleTab({ schedule, games, showToast }) {
     await addDoc(teamCol("schedule"), {
       date: addDate,
       opponent: addOpponent.trim() || null,
+      time: addTime.trim() || null,
+      location: addLocation.trim() || null,
       createdAt: serverTimestamp(),
     });
     setAddOpen(false);
@@ -143,8 +150,13 @@ export default function ScheduleTab({ schedule, games, showToast }) {
               const linked = gameForSchedule(games, entry.id);
               return (
                 <div key={entry.id} className="list-row">
-                  <span className="grow" style={{ fontFamily: "var(--font-cond)", fontSize: 18, fontWeight: 600 }}>
-                    vs {entry.opponent || "TBD"}
+                  <span className="grow">
+                    <span style={{ fontFamily: "var(--font-cond)", fontSize: 18, fontWeight: 600 }}>
+                      vs {entry.opponent || "TBD"}
+                    </span>
+                    {formatScheduleMeta(entry) && (
+                      <span className="muted" style={{ display: "block", fontSize: 13 }}>{formatScheduleMeta(entry)}</span>
+                    )}
                   </span>
                   {linked && (
                     <span className="muted" style={{ fontSize: 13, color: linked.final ? "var(--text-dim)" : "var(--green)" }}>
@@ -169,7 +181,7 @@ export default function ScheduleTab({ schedule, games, showToast }) {
         {upcoming.length === 0 ? (
           <p className="muted" style={{ margin: 0 }}>No upcoming games — tap a day or add one below.</p>
         ) : (
-          upcoming.slice(0, 8).map((entry) => {
+          upcoming.map((entry) => {
             const linked = gameForSchedule(games, entry.id);
             const isToday = entry.date === today;
             return (
@@ -191,6 +203,7 @@ export default function ScheduleTab({ schedule, games, showToast }) {
                   </span>
                   <span className="muted" style={{ display: "block", fontSize: 13 }}>
                     vs {entry.opponent || "TBD"}
+                    {formatScheduleMeta(entry) && ` · ${formatScheduleMeta(entry)}`}
                     {linked && (linked.final ? " · played" : " · live")}
                   </span>
                 </span>
@@ -213,7 +226,9 @@ export default function ScheduleTab({ schedule, games, showToast }) {
         onCancel={() => setAddOpen(false)}
       >
         <input type="date" value={addDate} onChange={(e) => setAddDate(e.target.value)} style={{ marginBottom: 10 }} />
-        <input placeholder="Opponent (optional)" value={addOpponent} onChange={(e) => setAddOpponent(e.target.value)} />
+        <input placeholder="Opponent (optional)" value={addOpponent} onChange={(e) => setAddOpponent(e.target.value)} style={{ marginBottom: 10 }} />
+        <input placeholder="Time (e.g. 7:15 PM)" value={addTime} onChange={(e) => setAddTime(e.target.value)} style={{ marginBottom: 10 }} />
+        <input placeholder="Field (optional)" value={addLocation} onChange={(e) => setAddLocation(e.target.value)} />
       </Dialog>
 
       <Dialog

@@ -105,7 +105,7 @@ VITE_MOCK=1 npm run dev
 ```
 teams/{teamId}                       name, code (join number), createdAt
 teams/{teamId}/players/{playerId}    name, orderIndex, active
-teams/{teamId}/schedule/{scheduleId} date, opponent?, createdAt
+teams/{teamId}/schedule/{scheduleId} date, opponent?, time?, location?, createdAt
 teams/{teamId}/games/{gameId}        date, opponent?, present[], final, usScore?, themScore?, result? (W|L|T),
     leagueDivision: "D", hrLimit: 2 — JC Parks D league HR cap (always applied),
     scheduleId? — links to a schedule entry when started from the calendar
@@ -133,6 +133,7 @@ note: node_modules is symlinked to node_modules.nosync so iCloud doesn't sync it
 ## Schedule & auto-start
 
 - **Schedule** tab — month calendar for the season; tap a day to add or view games.
+  Beer Pressure (code 2337) gets the **2026 summer slate** preloaded on first launch.
 - **Auto-start** (on by default) — on game day, opening the app creates a live game
   from today's schedule entry (all active players marked present). Toggle off in
   Schedule if you prefer to start manually from the Game tab.

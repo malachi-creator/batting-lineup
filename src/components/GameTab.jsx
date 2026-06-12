@@ -14,7 +14,7 @@ import AtBatEditor, { updateAtBat } from "./AtBatEditor.jsx";
 import { Dialog, PromptDialog } from "./Dialog.jsx";
 import { BALL_TYPE_LABELS, BALL_TYPES, GAME_RESULT_LABELS, OUT_TYPE_LABELS, OUT_TYPES, RESULT_LABELS, ZONE_LABELS, formatAbResult, needsBallType, needsPlacement, resultChipClass, resultChipCode } from "../stats.js";
 import { tap } from "../haptics.js";
-import { findScheduleForDate, formatScheduleDate, gameForSchedule, todayISO } from "../schedule.js";
+import { findScheduleForDate, formatScheduleDate, formatScheduleMeta, gameForSchedule, todayISO } from "../schedule.js";
 
 export default function GameTab({ players, games, schedule, activeGame, abByGame, showToast }) {
   if (activeGame) {
@@ -75,7 +75,9 @@ function GameSetup({ players, games, schedule, showToast }) {
           <span className="grow">
             <b>Today:</b> vs {todayEntry.opponent || "TBD"}
             <span className="muted" style={{ display: "block", fontSize: 13, marginTop: 2 }}>
-              {formatScheduleDate(todayEntry.date)} · pre-filled below
+              {formatScheduleDate(todayEntry.date)}
+              {formatScheduleMeta(todayEntry) && ` · ${formatScheduleMeta(todayEntry)}`}
+              {" · pre-filled below"}
             </span>
           </span>
         </div>

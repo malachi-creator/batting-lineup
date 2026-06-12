@@ -71,6 +71,10 @@ export function formatScheduleDate(date) {
   });
 }
 
+export function formatScheduleMeta(entry) {
+  return [entry?.time, entry?.location].filter(Boolean).join(" · ");
+}
+
 export function upcomingSchedule(schedule, fromDate = todayISO()) {
   return [...schedule]
     .filter((s) => s.date >= fromDate)

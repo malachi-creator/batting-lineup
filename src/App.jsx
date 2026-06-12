@@ -22,6 +22,7 @@ import { parseCatchUpHash, clearCatchUpHash } from "./catchUp.js";
 import { useSyncStatus } from "./hooks/useSyncStatus.js";
 import { tap } from "./haptics.js";
 import { buildGameFromSchedule, getAutoStartEnabled, shouldAutoStart } from "./schedule.js";
+import { SUMMER_SCHEDULE_2026 } from "./summerSchedule2026.js";
 
 const ROSTER = [
   "Malachi",
@@ -53,6 +54,7 @@ export default function App() {
   const [dbError, setDbError] = useState(null);
   const [catchUp, setCatchUp] = useState(() => parseCatchUpHash(window.location.hash));
   const seeded = useRef(false);
+  const scheduleSeeded = useRef(false);
   const autoStarted = useRef(false);
   const toastTimer = useRef(null);
 
@@ -90,12 +92,28 @@ export default function App() {
     }, (err) => setDbError(err.code || err.message));
   }, [team]);
 
-  // Season schedule
+  // Season schedule — Beer Pressure's 2026 summer slate is preloaded on first launch
   useEffect(() => {
     if (!team) return;
     const q = query(teamCol("schedule"), orderBy("date", "asc"));
     return onSnapshot(q, (snap) => {
-      setSchedule(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      if (list.length === 0 && !scheduleSeeded.current && !snap.metadata.fromCache && team === BEER_PRESSURE_ID) {
+        scheduleSeeded.current = true;
+        const batch = writeBatch(db);
+        SUMMER_SCHEDULE_2026.forEach((entry) => {
+          batch.set(doc(teamCol("schedule")), {
+            date: entry.date,
+            time: entry.time,
+            opponent: entry.opponent,
+            location: entry.location,
+            createdAt: serverTimestamp(),
+          });
+        });
+        batch.commit();
+        return;
+      }
+      setSchedule(list);
     }, (err) => setDbError(err.code || err.message));
   }, [team]);
 
