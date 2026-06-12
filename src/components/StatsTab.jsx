@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { getDocs, query, updateDoc, writeBatch } from "firebase/firestore";
-import { db } from "../firebase.js";
+import { updateDoc } from "firebase/firestore";
+import { deleteGameRecord } from "../games.js";
 import { computeLine, fmt3, resultChipCode } from "../stats.js";
-import { teamCol, teamDoc } from "../team.js";
+import { teamDoc } from "../team.js";
 import PlayerDetail from "./PlayerDetail.jsx";
 import LineupCheck from "./LineupCheck.jsx";
 import { Dialog } from "./Dialog.jsx";
@@ -284,12 +284,7 @@ function GamesLog({ players, games, allAtBats, showToast, hasActiveGame }) {
         confirmLabel="Delete"
         danger
         onConfirm={async () => {
-          const g = deleteGame;
-          const snap = await getDocs(query(teamCol("games", g.id, "atBats")));
-          const batch = writeBatch(db);
-          snap.docs.forEach((d) => batch.delete(teamDoc("games", g.id, "atBats", d.id)));
-          batch.delete(teamDoc("games", g.id));
-          await batch.commit();
+          await deleteGameRecord(deleteGame.id);
           showToast("Game deleted");
           setDeleteGame(null);
         }}

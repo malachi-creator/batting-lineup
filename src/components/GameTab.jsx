@@ -6,6 +6,7 @@ import {
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
+import { deleteGameRecord } from "../games.js";
 import { teamCol, teamDoc } from "../team.js";
 import { LEAGUE_DIVISION, LEAGUE_HR_LIMIT, LEAGUE_LABEL, countGameHomeRuns, gameHrLimit } from "../league.js";
 import FieldDiagram from "./FieldDiagram.jsx";
@@ -101,6 +102,7 @@ function AtBatLogger({ game, players, atBats, showToast }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [subsOpen, setSubsOpen] = useState(false);
   const [endConfirm, setEndConfirm] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [editAb, setEditAb] = useState(null);
   const [recentOpen, setRecentOpen] = useState(false);
 
@@ -170,6 +172,13 @@ function AtBatLogger({ game, players, atBats, showToast }) {
     setMenuOpen(false);
     await updateDoc(teamDoc("games", game.id), { final: true });
     showToast(`Game saved · ${atBats.length} at-bats`);
+  };
+
+  const removeGame = async () => {
+    setDeleteConfirm(false);
+    setMenuOpen(false);
+    await deleteGameRecord(game.id);
+    showToast("Game deleted");
   };
 
   const addSub = async (playerId) => {
@@ -410,6 +419,13 @@ function AtBatLogger({ game, players, atBats, showToast }) {
             Add sub ({bench.length} available)
           </button>
         )}
+        <button
+          className="btn danger"
+          style={{ width: "100%", marginTop: 10 }}
+          onClick={() => { setDeleteConfirm(true); setMenuOpen(false); }}
+        >
+          Delete game
+        </button>
       </Dialog>
 
       <Dialog open={subsOpen} title="Add sub" hideCancel confirmLabel="Done" onConfirm={() => setSubsOpen(false)} onCancel={() => setSubsOpen(false)}>
@@ -429,6 +445,16 @@ function AtBatLogger({ game, players, atBats, showToast }) {
         cancelLabel="Keep going"
         onConfirm={finishGame}
         onCancel={() => setEndConfirm(false)}
+      />
+
+      <Dialog
+        open={deleteConfirm}
+        title="Delete game?"
+        message={`Remove ${game.date}${game.opponent ? ` vs ${game.opponent}` : ""} and all ${atBats.length} at-bats? This can't be undone.`}
+        confirmLabel="Delete"
+        danger
+        onConfirm={removeGame}
+        onCancel={() => setDeleteConfirm(false)}
       />
 
       <AtBatEditor
