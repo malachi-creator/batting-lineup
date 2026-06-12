@@ -113,7 +113,7 @@ teams/{teamId}/games/{gameId}/atBats/{abId}
     outType (K|GO|FO|PO|LO|FC|null), rbi, twoOuts, createdAt,
     loc ({a, d}|null) — exact tap spot: a = angle° (-45 LF line … +45 RF
     line), d = depth (0 home … 1 fence). Zone is derived from it.
-    ballType (GO|FO|LO|PO|null) — ground/fly/line/pop on hits and safe reaches
+    ballType (GO|FO|LO|PO|null) — ground/fly/line/pop on singles and safe reaches only
 teams/{teamId}/analyses/{playerId|_lineup}   cached Coach Z text + lastAnalyzedAbCount
 ```
 

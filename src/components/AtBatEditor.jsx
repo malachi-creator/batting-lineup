@@ -13,6 +13,7 @@ import {
   RESULT_LABELS,
   ZONE_LABELS,
   needsPlacement,
+  needsBallType,
 } from "../stats.js";
 import { tap } from "../haptics.js";
 
@@ -28,6 +29,7 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
   if (!open || !ab) return null;
 
   const inPlacementFlow = needsPlacement(draft?.result);
+  const wantsBallType = needsBallType(draft?.result);
   const set = (fields) => setDraft((d) => ({ ...d, ...fields }));
   const place = (zone, loc) => set({ zone, loc });
 
@@ -36,7 +38,7 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
     onSave({
       result: draft.result,
       outType: draft.result === "OUT" ? draft.outType : null,
-      ballType: inPlacementFlow ? draft.ballType || null : null,
+      ballType: wantsBallType ? draft.ballType || null : null,
       zone: draft.zone || null,
       loc: draft.loc || null,
       contact: inPlacementFlow ? draft.contact || "MED" : null,
@@ -59,7 +61,7 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
               set({
                 result: r,
                 outType: r === "OUT" ? draft.outType : null,
-                ballType: PLACEMENT_RESULTS.includes(r) ? draft.ballType : null,
+                ballType: needsBallType(r) ? draft.ballType : null,
                 zone: r === "BB" || r === "OUT" && !draft.outType ? null : draft.zone,
                 loc: r === "BB" ? null : draft.loc,
                 contact: PLACEMENT_RESULTS.includes(r) ? draft.contact : null,
@@ -91,7 +93,7 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
         </>
       )}
 
-      {inPlacementFlow && draft.loc && (
+      {wantsBallType && draft.loc && (
         <>
           <div className="step-label">How did it go?</div>
           <div className="btn-grid cols3" style={{ marginBottom: 10 }}>
@@ -104,7 +106,7 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
         </>
       )}
 
-      {inPlacementFlow && draft.loc && draft.ballType && (
+      {inPlacementFlow && draft.loc && (!wantsBallType || draft.ballType) && (
         <>
           <div className="step-label">Contact</div>
           <div className="btn-grid cols3" style={{ marginBottom: 10 }}>

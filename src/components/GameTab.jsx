@@ -11,7 +11,7 @@ import { LEAGUE_DIVISION, LEAGUE_HR_LIMIT, LEAGUE_LABEL, countGameHomeRuns, game
 import FieldDiagram from "./FieldDiagram.jsx";
 import AtBatEditor, { updateAtBat } from "./AtBatEditor.jsx";
 import { Dialog, PromptDialog } from "./Dialog.jsx";
-import { BALL_TYPE_LABELS, BALL_TYPES, GAME_RESULT_LABELS, OUT_TYPE_LABELS, OUT_TYPES, RESULT_LABELS, ZONE_LABELS, formatAbResult, needsPlacement, resultChipClass, resultChipCode } from "../stats.js";
+import { BALL_TYPE_LABELS, BALL_TYPES, GAME_RESULT_LABELS, OUT_TYPE_LABELS, OUT_TYPES, RESULT_LABELS, ZONE_LABELS, formatAbResult, needsBallType, needsPlacement, resultChipClass, resultChipCode } from "../stats.js";
 import { tap } from "../haptics.js";
 
 export default function GameTab({ players, games, activeGame, abByGame, showToast }) {
@@ -145,7 +145,7 @@ function AtBatLogger({ game, players, atBats, showToast }) {
       zone: ab.zone || null,
       loc: ab.loc || null,
       contact: placement ? ab.contact || null : null,
-      ballType: placement ? ab.ballType || null : null,
+      ballType: needsBallType(ab.result) ? ab.ballType || null : null,
       outType: ab.result === "OUT" ? ab.outType || null : null,
       rbi: ab.rbi || 0,
       twoOuts: !!ab.twoOuts,
@@ -210,14 +210,15 @@ function AtBatLogger({ game, players, atBats, showToast }) {
   };
 
   const inPlacementFlow = needsPlacement(pending.result);
+  const wantsBallType = needsBallType(pending.result);
 
   let step = "result";
   if (pending.result === "OUT" && !pending.outType) step = "outType";
   else if (pending.result === "OUT" && pending.outType && pending.outType !== "K" && !pending.loc) step = "placement";
   else if (pending.result === "OUT" && pending.outType && pending.outType !== "K" && pending.loc) step = "outConfirm";
   else if (inPlacementFlow && !pending.loc) step = "placement";
-  else if (inPlacementFlow && pending.loc && !pending.ballType) step = "ballType";
-  else if (inPlacementFlow && pending.loc && pending.ballType) step = "contact";
+  else if (inPlacementFlow && pending.loc && wantsBallType && !pending.ballType) step = "ballType";
+  else if (inPlacementFlow && pending.loc) step = "contact";
 
   const placeBall = (zone, loc) => choose({ zone, loc });
   const placementLabel = pending.loc ? "Tap again to move the pin" : "Tap exactly where the ball landed";
@@ -313,7 +314,7 @@ function AtBatLogger({ game, players, atBats, showToast }) {
       {step === "contact" && inPlacementFlow && (
         <>
           <div className="step-label">
-            Contact — {BALL_TYPE_LABELS[pending.ballType]} {RESULT_LABELS[pending.result].toLowerCase()}
+            Contact — {pending.ballType ? `${BALL_TYPE_LABELS[pending.ballType]} ` : ""}{RESULT_LABELS[pending.result].toLowerCase()}
             {pending.zone ? ` · ${ZONE_LABELS[pending.zone]}` : ""}
           </div>
           <FieldDiagram marker={pending.loc} onZone={placeBall} />

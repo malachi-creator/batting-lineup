@@ -85,6 +85,11 @@ export function needsPlacement(result) {
   return PLACEMENT_RESULTS.includes(result);
 }
 
+// Ground/fly/line/pop — singles and infield reaches; extra bases skip this step.
+export function needsBallType(result) {
+  return result === "1B" || REACH_SAFE_RESULTS.includes(result);
+}
+
 /** CSS class for at-bat result chips (hit / walk / error / fc / out). */
 export function resultChipClass(ab) {
   if (ab.result === "BB") return "bb";
