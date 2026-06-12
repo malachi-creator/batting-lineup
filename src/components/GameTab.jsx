@@ -291,7 +291,7 @@ function AtBatLogger({ game, players, atBats, showToast }) {
   const placeBall = (zone, loc) => choose({ zone, loc });
   const placementLabel = pending.loc ? "Tap again to move the pin" : "Tap exactly where the ball landed";
 
-  const recent = [...atBats].slice(-8).reverse();
+  const recent = [...atBats].sort((a, b) => (b.seq ?? 0) - (a.seq ?? 0));
 
   return (
     <div>
@@ -432,10 +432,10 @@ function AtBatLogger({ game, players, atBats, showToast }) {
         </>
       )}
 
-      {step === "result" && atBats.length > 0 && (
+      {atBats.length > 0 && (
         <div className="card" style={{ marginTop: 12, padding: "8px 12px" }}>
           <div className="list-row row-tap" style={{ border: "none" }} onClick={() => { tap(); setRecentOpen((v) => !v); }}>
-            <span className="grow" style={{ fontFamily: "var(--font-cond)", fontWeight: 600 }}>Recent at-bats</span>
+            <span className="grow" style={{ fontFamily: "var(--font-cond)", fontWeight: 600 }}>Previous at-bats</span>
             <span className="muted">{recentOpen ? "▾" : "▸"}</span>
           </div>
           {recentOpen && recent.map((a) => {

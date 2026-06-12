@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from "react";
 import { updateDoc } from "firebase/firestore";
 import { deleteGameRecord } from "../games.js";
-import { computeLine, fmt3, resultChipCode } from "../stats.js";
+import { computeLine, fmt3, resultChipClass, resultChipCode } from "../stats.js";
 import { teamDoc } from "../team.js";
 import PlayerDetail from "./PlayerDetail.jsx";
 import LineupCheck from "./LineupCheck.jsx";
+import AtBatEditor, { updateAtBat } from "./AtBatEditor.jsx";
 import { Dialog } from "./Dialog.jsx";
 import {
   exportStatsCsv,
@@ -166,6 +167,8 @@ function TeamTable({ players, allAtBats, onPlayer }) {
 function GamesLog({ players, games, allAtBats, showToast, hasActiveGame, onGoToGame }) {
   const [openId, setOpenId] = useState(null);
   const [editGame, setEditGame] = useState(null);
+  const [editAb, setEditAb] = useState(null);
+  const [absOpenId, setAbsOpenId] = useState(null);
   const [deleteGame, setDeleteGame] = useState(null);
   const [reopenGame, setReopenGame] = useState(null);
 
@@ -198,7 +201,7 @@ function GamesLog({ players, games, allAtBats, showToast, hasActiveGame, onGoToG
         return (
           <div key={g.id} className="card">
             <div className="list-row" style={{ borderBottom: open ? undefined : "none" }}>
-              <div className="grow row-tap" onClick={() => { tap(); setOpenId(open ? null : g.id); }}>
+              <div className="grow row-tap" onClick={() => { tap(); setOpenId(open ? null : g.id); if (open) setAbsOpenId(null); }}>
                 <div style={{ fontFamily: "var(--font-cond)", fontSize: 18, fontWeight: 700 }}>
                   {g.date} {g.opponent ? `vs ${g.opponent}` : ""}{" "}
                   {!g.final && <span style={{ color: "var(--green)" }}>· LIVE</span>}
@@ -262,6 +265,27 @@ function GamesLog({ players, games, allAtBats, showToast, hasActiveGame, onGoToG
                     })}
                   </tbody>
                 </table>
+                {abs.length > 0 && (
+                  <div style={{ marginTop: 10 }}>
+                    <div
+                      className="list-row row-tap"
+                      style={{ border: "none", padding: "4px 0" }}
+                      onClick={() => { tap(); setAbsOpenId(absOpenId === g.id ? null : g.id); }}
+                    >
+                      <span className="grow" style={{ fontFamily: "var(--font-cond)", fontWeight: 600 }}>At-bats</span>
+                      <span className="muted">{absOpenId === g.id ? "▾" : "▸"}</span>
+                    </div>
+                    {absOpenId === g.id && [...abs].sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0)).map((a) => {
+                      const who = players.find((p) => p.id === a.playerId);
+                      return (
+                        <div key={a.id} className="ab-chip row-tap" onClick={() => { tap(); setEditAb(a); }}>
+                          <span className={`res ${resultChipClass(a)}`}>{resultChipCode(a)}</span>
+                          <span className="meta grow">{who?.name} · tap to edit</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 <div className="game-actions">
                   {g.final && !hasActiveGame && (
                     <button className="btn small" onClick={() => setReopenGame(g)}>Reopen</button>
@@ -328,6 +352,14 @@ function GamesLog({ players, games, allAtBats, showToast, hasActiveGame, onGoToG
           setReopenGame(null);
         }}
         onCancel={() => setReopenGame(null)}
+      />
+
+      <AtBatEditor
+        ab={editAb}
+        playerName={players.find((p) => p.id === editAb?.playerId)?.name}
+        open={!!editAb}
+        onClose={() => setEditAb(null)}
+        onSave={(fields) => updateAtBat(editAb.gameId, editAb.id, fields).then(() => showToast("At-bat updated"))}
       />
     </div>
   );
