@@ -7,6 +7,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { teamCol, teamDoc } from "../team.js";
+import { LEAGUE_DIVISIONS, countGameHomeRuns } from "../league.js";
 import FieldDiagram from "./FieldDiagram.jsx";
 import AtBatEditor, { updateAtBat } from "./AtBatEditor.jsx";
 import { Dialog, PromptDialog } from "./Dialog.jsx";
@@ -31,6 +32,7 @@ function GameSetup({ players, games, showToast }) {
   const active = players.filter((p) => p.active !== false);
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [opponent, setOpponent] = useState("");
+  const [division, setDivision] = useState("");
   const [present, setPresent] = useState(() => new Set(active.map((p) => p.id)));
 
   const toggle = (id) => {
@@ -44,9 +46,12 @@ function GameSetup({ players, games, showToast }) {
 
   const start = () => {
     tap(20);
+    const league = LEAGUE_DIVISIONS.find((d) => d.value === division) || LEAGUE_DIVISIONS[0];
     addDoc(teamCol("games"), {
       date,
       opponent: opponent.trim() || null,
+      leagueDivision: league.value || null,
+      hrLimit: league.hrLimit,
       present: active.filter((p) => present.has(p.id)).map((p) => p.id),
       final: false,
       usScore: null,
@@ -60,10 +65,21 @@ function GameSetup({ players, games, showToast }) {
     <div>
       <h2 style={{ fontSize: 26, marginBottom: 12 }}>New Game</h2>
       <div className="card">
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           <input placeholder="Opponent (optional)" value={opponent} onChange={(e) => setOpponent(e.target.value)} />
         </div>
+        <label className="field-label" style={{ marginTop: 10 }}>League division</label>
+        <select value={division} onChange={(e) => setDivision(e.target.value)} style={{ width: "100%" }}>
+          {LEAGUE_DIVISIONS.map((d) => (
+            <option key={d.value || "none"} value={d.value}>{d.label}</option>
+          ))}
+        </select>
+        {division && (
+          <p className="muted" style={{ margin: "8px 0 0", fontSize: 13 }}>
+            JC Parks rule: HRs over the limit count as an out (not a hit).
+          </p>
+        )}
       </div>
       <div className="card">
         <h3>Who's here? ({present.size})</h3>
@@ -108,6 +124,10 @@ function AtBatLogger({ game, players, atBats, showToast }) {
     [players, game.present]
   );
 
+  const teamHrs = countGameHomeRuns(atBats);
+  const hrLimit = game.hrLimit ?? null;
+  const hrAtLimit = hrLimit != null && teamHrs >= hrLimit;
+
   if (lineup.length === 0) return <p className="muted">No players marked present — add a sub from the menu.</p>;
 
   const batter = lineup[atBats.length % lineup.length];
@@ -139,7 +159,7 @@ function AtBatLogger({ game, players, atBats, showToast }) {
       twoOuts: !!ab.twoOuts,
       createdAt: serverTimestamp(),
     });
-    showToast(`${batter.name}: ${formatAbResult(ab)}`);
+    showToast(`${batter.name}: ${formatAbResult(ab)}${ab.outType === "XHR" ? " · over HR limit" : ab.result === "HR" && hrLimit != null && teamHrs + 1 >= hrLimit ? ` · team at HR limit (${teamHrs + 1}/${hrLimit})` : ""}`);
     reset();
   };
 
@@ -189,6 +209,14 @@ function AtBatLogger({ game, players, atBats, showToast }) {
     setPending((p) => ({ ...p, ...fields }));
   };
 
+  const pickHr = () => {
+    if (hrAtLimit) {
+      save({ result: "OUT", outType: "XHR", zone: null, loc: null, contact: null });
+      return;
+    }
+    choose({ result: "HR", outType: null });
+  };
+
   const inPlacementFlow = needsPlacement(pending.result);
 
   let step = "result";
@@ -213,6 +241,12 @@ function AtBatLogger({ game, players, atBats, showToast }) {
           <button className="icon-btn" onClick={() => { tap(); setMenuOpen(true); }} aria-label="Game menu">⋯</button>
         </div>
         {scoreLabel && <div className="score-pill">{scoreLabel}</div>}
+        {hrLimit != null && (
+          <div className={`hr-pill${hrAtLimit ? " at-limit" : ""}`}>
+            Team HRs {teamHrs}/{hrLimit}
+            {hrAtLimit && " · next HR is an out"}
+          </div>
+        )}
         <div className="now">{batter.name}</div>
         <div className="ondeck">On deck: <b>{onDeck.name}</b></div>
       </div>
@@ -224,7 +258,9 @@ function AtBatLogger({ game, players, atBats, showToast }) {
             <button className="btn" onClick={() => choose({ result: "1B" })}>Single</button>
             <button className="btn" onClick={() => choose({ result: "2B" })}>Double</button>
             <button className="btn" onClick={() => choose({ result: "3B" })}>Triple</button>
-            <button className="btn" onClick={() => choose({ result: "HR" })}>Home Run</button>
+            <button className={`btn${hrAtLimit ? " danger" : ""}`} onClick={pickHr}>
+              {hrAtLimit ? "HR (limit out)" : "Home Run"}
+            </button>
             <button className="btn" onClick={() => save({ result: "BB" })}>Walk</button>
             <button className="btn" onClick={() => choose({ result: "OUT" })}>Out</button>
             <button className="btn" onClick={() => choose({ result: "ROE", outType: null })}>{GAME_RESULT_LABELS.ROE}</button>
@@ -336,6 +372,12 @@ function AtBatLogger({ game, players, atBats, showToast }) {
         onCancel={() => setMenuOpen(false)}
       >
         <div className="step-label" style={{ marginTop: 0 }}>Score</div>
+        {hrLimit != null && (
+          <p style={{ margin: "0 0 10px", fontSize: 14 }}>
+            Team home runs: <b>{teamHrs}/{hrLimit}</b>
+            {game.leagueDivision && <span className="muted"> · JC Parks {game.leagueDivision}</span>}
+          </p>
+        )}
         <div className="score-row">
           <span>Us</span>
           <div className="stepper">

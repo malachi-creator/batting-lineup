@@ -33,10 +33,12 @@ export const OUT_TYPE_LABELS = {
   PO: "Pop-up",
   LO: "Line out",
   FC: "Force out", // legacy: logged under OUT before FC became its own result
+  XHR: "HR limit out", // JC Parks: team HR over game limit counts as an out
 };
 
 // Most common slow-pitch outs first (pop-ups and lazy flies are typical).
 export const OUT_TYPES = ["PO", "FO", "GO", "LO", "K"];
+export const EDIT_OUT_TYPES = [...OUT_TYPES, "FC", "XHR"];
 
 export const ZONES = ["LF", "CF", "RF", "IF_L", "IF_M", "IF_R"];
 export const ZONE_LABELS = {

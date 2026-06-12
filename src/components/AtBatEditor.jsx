@@ -5,8 +5,8 @@ import FieldDiagram from "./FieldDiagram.jsx";
 import { Dialog } from "./Dialog.jsx";
 import {
   CONTACT_LABELS,
+  EDIT_OUT_TYPES,
   OUT_TYPE_LABELS,
-  OUT_TYPES,
   PLACEMENT_RESULTS,
   RESULT_LABELS,
   ZONE_LABELS,
@@ -15,7 +15,6 @@ import {
 import { tap } from "../haptics.js";
 
 const RESULT_OPTIONS = ["1B", "2B", "3B", "HR", "BB", "OUT", "ROE", "FC"];
-const EDIT_OUT_TYPES = [...OUT_TYPES, "FC"]; // FC legacy on OUT records
 
 export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
   const [draft, setDraft] = useState(ab);

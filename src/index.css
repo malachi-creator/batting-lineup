@@ -872,6 +872,18 @@ table.stats td.name {
   margin: 4px 0 2px;
 }
 
+.hr-pill {
+  font-family: var(--font-cond);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin: 2px 0 4px;
+}
+
+.hr-pill.at-limit {
+  color: var(--red);
+}
+
 .score-row {
   display: flex;
   align-items: center;
