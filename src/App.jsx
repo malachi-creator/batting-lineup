@@ -61,7 +61,7 @@ export default function App() {
     if (!team) return;
     const q = query(teamCol("players"), orderBy("orderIndex"));
     return onSnapshot(q, (snap) => {
-      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const list = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
       if (list.length === 0 && !seeded.current && !snap.metadata.fromCache && team === BEER_PRESSURE_ID) {
         seeded.current = true;
         const batch = writeBatch(db);
@@ -80,7 +80,7 @@ export default function App() {
     if (!team) return;
     const q = query(teamCol("games"), orderBy("date", "desc"));
     return onSnapshot(q, (snap) => {
-      setGames(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setGames(snap.docs.map((d) => ({ ...d.data(), id: d.id })));
     }, (err) => setDbError(err.code || err.message));
   }, [team]);
 
@@ -91,7 +91,7 @@ export default function App() {
     if (!activeGame) return;
     const q = query(teamCol("games", activeGame.id, "atBats"), orderBy("seq"));
     return onSnapshot(q, (snap) => {
-      const abs = snap.docs.map((d) => ({ id: d.id, gameId: activeGame.id, ...d.data() }));
+      const abs = snap.docs.map((d) => ({ gameId: activeGame.id, ...d.data(), id: d.id }));
       setAbByGame((prev) => ({ ...prev, [activeGame.id]: abs }));
     });
   }, [activeGame?.id]);
@@ -102,7 +102,7 @@ export default function App() {
       .forEach((g) => {
         if (abByGame[g.id]) return;
         getDocs(query(teamCol("games", g.id, "atBats"), orderBy("seq"))).then((snap) => {
-          const abs = snap.docs.map((d) => ({ id: d.id, gameId: g.id, ...d.data() }));
+          const abs = snap.docs.map((d) => ({ gameId: g.id, ...d.data(), id: d.id }));
           setAbByGame((prev) => ({ ...prev, [g.id]: abs }));
         });
       });
