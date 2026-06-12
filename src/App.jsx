@@ -14,6 +14,8 @@ import StatsTab from "./components/StatsTab.jsx";
 import RosterTab from "./components/RosterTab.jsx";
 import MeTab from "./components/MeTab.jsx";
 import TeamGate from "./components/TeamGate.jsx";
+import CatchUpTab from "./components/CatchUpTab.jsx";
+import { parseCatchUpHash, clearCatchUpHash } from "./catchUp.js";
 import { useSyncStatus } from "./hooks/useSyncStatus.js";
 import { tap } from "./haptics.js";
 
@@ -44,8 +46,15 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [installEvt, setInstallEvt] = useState(null);
   const [dbError, setDbError] = useState(null);
+  const [catchUp, setCatchUp] = useState(() => parseCatchUpHash(window.location.hash));
   const seeded = useRef(false);
   const toastTimer = useRef(null);
+
+  useEffect(() => {
+    const onHash = () => setCatchUp(parseCatchUpHash(window.location.hash));
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   // Roster — the founding team's roster is preloaded on first launch
   useEffect(() => {
@@ -147,6 +156,37 @@ export default function App() {
       <div className="screen" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
         <span className="spin" /> Loading…
       </div>
+    );
+  }
+
+  const exitCatchUp = () => {
+    clearCatchUpHash();
+    setCatchUp(null);
+  };
+
+  if (catchUp) {
+    return (
+      <>
+        <header className="app-header">
+          <div className="brand">
+            {getTeamName() || "Team"} <span>Batting</span>
+          </div>
+          <div className="header-meta">
+            <span className={`sync-badge ${syncClass}`}>{syncLabel}</span>
+          </div>
+        </header>
+        <main className="screen">
+          <CatchUpTab
+            gameId={catchUp.gameId}
+            playerId={catchUp.playerId}
+            players={players}
+            games={games}
+            showToast={showToast}
+            onDone={exitCatchUp}
+          />
+        </main>
+        {toast && <div className="toast">{toast}</div>}
+      </>
     );
   }
 

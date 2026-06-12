@@ -15,6 +15,7 @@ import {
   shareStats,
 } from "../export.js";
 import { tap } from "../haptics.js";
+import { copyCatchUpLink } from "../catchUp.js";
 
 export default function StatsTab({ players, games, allAtBats, showToast, hasActiveGame }) {
   const [view, setView] = useState("team");
@@ -211,10 +212,15 @@ function GamesLog({ players, games, allAtBats, showToast, hasActiveGame }) {
             </div>
             {open && (
               <>
+                {g.final && (
+                  <p className="catch-up-hint">
+                    App messed up? Send each player their catch-up link so they can log missed at-bats.
+                  </p>
+                )}
                 <table className="stats" style={{ marginTop: 6 }}>
-                  <thead><tr><th>Player</th><th>PA</th><th>H</th><th>BB</th><th>RBI</th><th>Line</th></tr></thead>
+                  <thead><tr><th>Player</th><th>PA</th><th>H</th><th>BB</th><th>RBI</th><th>Line</th>{g.final && <th></th>}</tr></thead>
                   <tbody>
-                    {players.filter((p) => abs.some((a) => a.playerId === p.id)).map((p) => {
+                    {(g.final ? players.filter((p) => g.present?.includes(p.id)) : players.filter((p) => abs.some((a) => a.playerId === p.id))).map((p) => {
                       const pabs = abs.filter((a) => a.playerId === p.id);
                       const l = computeLine(pabs);
                       return (
@@ -224,7 +230,21 @@ function GamesLog({ players, games, allAtBats, showToast, hasActiveGame }) {
                           <td>{l.h}</td>
                           <td>{l.bb}</td>
                           <td>{l.rbi}</td>
-                          <td className="muted" style={{ fontSize: 12 }}>{pabs.map((a) => resultChipCode(a)).join(" ")}</td>
+                          <td className="muted" style={{ fontSize: 12 }}>{pabs.length ? pabs.map((a) => resultChipCode(a)).join(" ") : "—"}</td>
+                          {g.final && (
+                            <td>
+                              <button
+                                className="btn small link-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  tap();
+                                  copyCatchUpLink(g.id, p.id, showToast);
+                                }}
+                              >
+                                Link
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
