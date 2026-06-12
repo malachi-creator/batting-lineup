@@ -24,6 +24,7 @@ html,
 body {
   margin: 0;
   padding: 0;
+  height: 100%;
   background: var(--navy);
   color: var(--text);
   font-family: var(--font-body);
@@ -33,9 +34,10 @@ body {
 #root {
   max-width: 560px;
   margin: 0 auto;
-  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 button {
@@ -90,18 +92,16 @@ h3 {
 
 .screen {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 16px 16px calc(84px + env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
 }
 
-/* Bottom tabs */
+/* Bottom tabs — in flex flow (not fixed) to avoid iOS Safari float bugs */
 .tabbar {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  flex-shrink: 0;
   width: 100%;
-  max-width: 560px;
   display: flex;
   background: var(--navy-2);
   border-top: 1px solid var(--line);
@@ -290,9 +290,12 @@ h3 {
 
 .toast {
   position: fixed;
-  bottom: calc(76px + env(safe-area-inset-bottom));
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: calc(60px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  width: fit-content;
+  max-width: calc(100% - 32px);
+  margin-inline: auto;
   background: var(--navy-3);
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -963,8 +966,7 @@ table.stats td.name {
 
 /* ── Tablet: iPad mini (744pt) through 13" iPad Pro (1032pt+) ────────── */
 @media (min-width: 700px) {
-  #root,
-  .tabbar {
+  #root {
     max-width: 840px;
   }
 
