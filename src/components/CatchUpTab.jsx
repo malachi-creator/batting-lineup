@@ -11,10 +11,30 @@ import {
 import { getTeamId, teamCol } from "../team.js";
 import FieldDiagram from "./FieldDiagram.jsx";
 import AtBatEditor, { updateAtBat } from "./AtBatEditor.jsx";
-import { OUT_TYPE_LABELS, RESULT_LABELS, ZONE_LABELS } from "../stats.js";
+import {
+  ENDED_BASE_LABELS,
+  OUT_TYPE_LABELS,
+  RESULT_LABELS,
+  ZONE_LABELS,
+  advanceBaseOptions,
+  baseEarned,
+  canAdvanceOnError,
+  formatAbResult,
+  normalizeEndedBase,
+} from "../stats.js";
 import { tap } from "../haptics.js";
 
-const EMPTY_PENDING = { result: null, outType: null, zone: null, loc: null, contact: null, rbi: 0, twoOuts: false };
+const EMPTY_PENDING = {
+  result: null,
+  outType: null,
+  zone: null,
+  loc: null,
+  contact: null,
+  endedBase: null,
+  advanceResolved: false,
+  rbi: 0,
+  twoOuts: false,
+};
 
 export default function CatchUpTab({ gameId, playerId, players, games, showToast, onDone }) {
   const game = games.find((g) => g.id === gameId);
@@ -82,10 +102,11 @@ export default function CatchUpTab({ gameId, playerId, players, games, showToast
       outType: ab.outType || null,
       rbi: ab.rbi || 0,
       twoOuts: !!ab.twoOuts,
+      endedBase: normalizeEndedBase(ab),
       source: "catch-up",
       createdAt: serverTimestamp(),
     });
-    showToast(`${RESULT_LABELS[ab.result]}${ab.outType ? ` (${OUT_TYPE_LABELS[ab.outType]})` : ""} saved`);
+    showToast(`${formatAbResult(ab)} saved`);
     reset();
   };
 
@@ -110,7 +131,8 @@ export default function CatchUpTab({ gameId, playerId, players, games, showToast
   else if (pending.result === "OUT" && pending.outType && pending.outType !== "K" && !pending.loc) step = "placement";
   else if (pending.result === "OUT" && pending.outType && pending.outType !== "K" && pending.loc) step = "outConfirm";
   else if (isHitLike && !pending.loc) step = "placement";
-  else if (isHitLike && pending.loc) step = "contact";
+  else if (isHitLike && pending.loc && !pending.contact) step = "contact";
+  else if (canAdvanceOnError(pending.result) && !pending.advanceResolved) step = "advance";
 
   const placeBall = (zone, loc) => choose({ zone, loc });
   const placementLabel = pending.loc ? "Tap again to move the pin" : "Tap exactly where the ball landed";
@@ -149,7 +171,7 @@ export default function CatchUpTab({ gameId, playerId, players, games, showToast
             <button className="btn" onClick={() => choose({ result: "2B" })}>Double</button>
             <button className="btn" onClick={() => choose({ result: "3B" })}>Triple</button>
             <button className="btn" onClick={() => choose({ result: "HR" })}>Home Run</button>
-            <button className="btn" onClick={() => save({ result: "BB" })}>Walk</button>
+            <button className="btn" onClick={() => choose({ result: "BB" })}>Walk</button>
             <button className="btn" onClick={() => choose({ result: "OUT" })}>Out</button>
             <button className="btn span2" onClick={() => choose({ result: "ROE" })}>Reached on Error</button>
           </div>
@@ -191,9 +213,46 @@ export default function CatchUpTab({ gameId, playerId, players, games, showToast
           <FieldDiagram marker={pending.loc} onZone={placeBall} />
           <p className="muted" style={{ textAlign: "center", margin: "8px 0 10px", fontSize: 13 }}>Pin shows where you placed it · tap field to adjust</p>
           <div className="btn-grid cols3">
-            <button className="btn" onClick={() => save({ contact: "HARD" })}>Hard</button>
-            <button className="btn selected" onClick={() => save({ contact: "MED" })}>Medium</button>
-            <button className="btn" onClick={() => save({ contact: "WEAK" })}>Weak</button>
+            {["HARD", "MED", "WEAK"].map((c) => (
+              <button
+                key={c}
+                className={`btn${c === "MED" ? " selected" : ""}`}
+                onClick={() => {
+                  if (canAdvanceOnError(pending.result)) choose({ contact: c });
+                  else save({ contact: c });
+                }}
+              >
+                {c === "HARD" ? "Hard" : c === "MED" ? "Medium" : "Weak"}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {step === "advance" && (
+        <>
+          <div className="step-label">
+            Extra base on error? <span style={{ color: "var(--text)" }}>{formatAbResult(pending)}</span>
+          </div>
+          <p className="muted" style={{ textAlign: "center", margin: "0 0 12px", fontSize: 13 }}>
+            Wild throw, dropped ball, etc. after they were already safe
+          </p>
+          <div className="btn-grid">
+            <button
+              className="btn primary"
+              onClick={() => save({ endedBase: null, advanceResolved: true })}
+            >
+              No — stayed at {ENDED_BASE_LABELS[baseEarned(pending)]}
+            </button>
+            {advanceBaseOptions(pending.result).map((b) => (
+              <button
+                key={b}
+                className="btn"
+                onClick={() => save({ endedBase: b, advanceResolved: true })}
+              >
+                Ended on {ENDED_BASE_LABELS[b]} (E)
+              </button>
+            ))}
           </div>
         </>
       )}

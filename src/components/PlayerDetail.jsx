@@ -21,10 +21,12 @@ export default function PlayerDetail({ player, atBats, allAtBats, gameDates, onB
     .map((a) => ({
       ...a.loc,
       kind: isReachSafe(a) ? (a.result === "ROE" ? "roe" : "fc") : "hit",
+      ballType: a.ballType,
+      result: a.result,
     }));
   const outPoints = atBats
     .filter((a) => a.loc && a.result === "OUT")
-    .map((a) => ({ ...a.loc, kind: "out" }));
+    .map((a) => ({ ...a.loc, kind: "out", outType: a.outType }));
 
   // Contact trend per game (chronological)
   const trend = useMemo(() => {

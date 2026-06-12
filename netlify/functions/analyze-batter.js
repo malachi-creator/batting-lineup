@@ -24,7 +24,9 @@ Result codes: 1B/2B/3B/HR are hits, BB is a walk, OUT is an out (with
 out-type o: K/GO/FO/PO/LO), ROE is reached on error, FC is fielder's
 choice (batter safe, another runner out). Reached balls may also carry
 ball-type b: GO/FO/LO/PO (ground/fly/line/pop) — e.g. a ground single
-is 1B with b=GO.
+is 1B with b=GO. ended is the base they stood on after a later error
+(2/3/4) — e.g. a single plus wild throw to first is r=1B with ended=2;
+still counts as a single for AVG/SLG.
 
 Rules: 120 words max. Lead with the single biggest pattern. Give one
 specific drill or swing thought per pattern. Encouraging but honest.

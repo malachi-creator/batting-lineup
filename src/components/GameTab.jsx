@@ -12,7 +12,25 @@ import { LEAGUE_DIVISION, LEAGUE_HR_LIMIT, LEAGUE_LABEL, countGameHomeRuns, game
 import FieldDiagram from "./FieldDiagram.jsx";
 import AtBatEditor, { updateAtBat } from "./AtBatEditor.jsx";
 import { Dialog, PromptDialog } from "./Dialog.jsx";
-import { BALL_TYPE_LABELS, BALL_TYPES, GAME_RESULT_LABELS, OUT_TYPE_LABELS, OUT_TYPES, RESULT_LABELS, ZONE_LABELS, formatAbResult, needsBallType, needsPlacement, resultChipClass, resultChipCode } from "../stats.js";
+import {
+  BALL_TYPE_LABELS,
+  BALL_TYPES,
+  ENDED_BASE_LABELS,
+  GAME_RESULT_LABELS,
+  OUT_TYPE_LABELS,
+  OUT_TYPES,
+  RESULT_LABELS,
+  ZONE_LABELS,
+  advanceBaseOptions,
+  baseEarned,
+  canAdvanceOnError,
+  formatAbResult,
+  needsBallType,
+  needsPlacement,
+  normalizeEndedBase,
+  resultChipClass,
+  resultChipCode,
+} from "../stats.js";
 import { tap } from "../haptics.js";
 import { findScheduleForDate, formatScheduleDate, formatScheduleMeta, gameForSchedule, todayISO } from "../schedule.js";
 
@@ -122,7 +140,18 @@ function GameSetup({ players, games, schedule, showToast }) {
   );
 }
 
-const EMPTY_PENDING = { result: null, outType: null, ballType: null, zone: null, loc: null, contact: null, rbi: 0, twoOuts: false };
+const EMPTY_PENDING = {
+  result: null,
+  outType: null,
+  ballType: null,
+  zone: null,
+  loc: null,
+  contact: null,
+  endedBase: null,
+  advanceResolved: false,
+  rbi: 0,
+  twoOuts: false,
+};
 
 function AtBatLogger({ game, players, atBats, showToast }) {
   const [pending, setPending] = useState(EMPTY_PENDING);
@@ -179,6 +208,7 @@ function AtBatLogger({ game, players, atBats, showToast }) {
       outType: ab.result === "OUT" ? ab.outType || null : null,
       rbi: ab.rbi || 0,
       twoOuts: !!ab.twoOuts,
+      endedBase: normalizeEndedBase(ab),
       createdAt: serverTimestamp(),
     });
     showToast(`${batter.name}: ${formatAbResult(ab)}${ab.outType === "XHR" ? " · over HR limit" : ab.result === "HR" && teamHrs + 1 >= hrLimit ? ` · team at HR limit (${teamHrs + 1}/${hrLimit})` : ""}`);
@@ -255,7 +285,8 @@ function AtBatLogger({ game, players, atBats, showToast }) {
   else if (pending.result === "OUT" && pending.outType && pending.outType !== "K" && pending.loc) step = "outConfirm";
   else if (inPlacementFlow && !pending.loc) step = "placement";
   else if (inPlacementFlow && pending.loc && wantsBallType && !pending.ballType) step = "ballType";
-  else if (inPlacementFlow && pending.loc) step = "contact";
+  else if (inPlacementFlow && pending.loc && (!wantsBallType || pending.ballType) && !pending.contact) step = "contact";
+  else if (canAdvanceOnError(pending.result) && !pending.advanceResolved) step = "advance";
 
   const placeBall = (zone, loc) => choose({ zone, loc });
   const placementLabel = pending.loc ? "Tap again to move the pin" : "Tap exactly where the ball landed";
@@ -292,7 +323,7 @@ function AtBatLogger({ game, players, atBats, showToast }) {
             <button className={`btn${hrAtLimit ? " danger" : ""}`} onClick={pickHr}>
               {hrAtLimit ? "HR (limit out)" : "Home Run"}
             </button>
-            <button className="btn" onClick={() => save({ result: "BB" })}>Walk</button>
+            <button className="btn" onClick={() => choose({ result: "BB" })}>Walk</button>
             <button className="btn" onClick={() => choose({ result: "OUT" })}>Out</button>
             <button className="btn" onClick={() => choose({ result: "ROE", outType: null })}>{GAME_RESULT_LABELS.ROE}</button>
             <button className="btn" onClick={() => choose({ result: "FC", outType: null })}>{GAME_RESULT_LABELS.FC}</button>
@@ -357,9 +388,46 @@ function AtBatLogger({ game, players, atBats, showToast }) {
           <FieldDiagram marker={pending.loc} onZone={placeBall} />
           <p className="muted" style={{ textAlign: "center", margin: "8px 0 10px", fontSize: 13 }}>Pin shows where it landed · tap to adjust · how well did you drive the arc?</p>
           <div className="btn-grid cols3">
-            <button className="btn" onClick={() => save({ contact: "HARD" })}>Hard</button>
-            <button className="btn selected" onClick={() => save({ contact: "MED" })}>Medium</button>
-            <button className="btn" onClick={() => save({ contact: "WEAK" })}>Weak</button>
+            {["HARD", "MED", "WEAK"].map((c) => (
+              <button
+                key={c}
+                className={`btn${c === "MED" ? " selected" : ""}`}
+                onClick={() => {
+                  if (canAdvanceOnError(pending.result)) choose({ contact: c });
+                  else save({ contact: c });
+                }}
+              >
+                {c === "HARD" ? "Hard" : c === "MED" ? "Medium" : "Weak"}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {step === "advance" && (
+        <>
+          <div className="step-label">
+            Extra base on error? <span style={{ color: "var(--text)" }}>{formatAbResult(pending)}</span>
+          </div>
+          <p className="muted" style={{ textAlign: "center", margin: "0 0 12px", fontSize: 13 }}>
+            Wild throw, dropped ball, etc. after they were already safe
+          </p>
+          <div className="btn-grid">
+            <button
+              className="btn primary"
+              onClick={() => save({ endedBase: null, advanceResolved: true })}
+            >
+              No — stayed at {ENDED_BASE_LABELS[baseEarned(pending)]}
+            </button>
+            {advanceBaseOptions(pending.result).map((b) => (
+              <button
+                key={b}
+                className="btn"
+                onClick={() => save({ endedBase: b, advanceResolved: true })}
+              >
+                Ended on {ENDED_BASE_LABELS[b]} (E)
+              </button>
+            ))}
           </div>
         </>
       )}

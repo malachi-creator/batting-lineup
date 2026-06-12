@@ -116,6 +116,8 @@ teams/{teamId}/games/{gameId}/atBats/{abId}
     loc ({a, d}|null) — exact tap spot: a = angle° (-45 LF line … +45 RF
     line), d = depth (0 home … 1 fence). Zone is derived from it.
     ballType (GO|FO|LO|PO|null) — ground/fly/line/pop on singles and safe reaches only
+    endedBase (2|3|4|null) — optional extra base reached on a later error (e.g. 1B
+    with wild throw to first → endedBase 2). Hit stats still use result only.
 teams/{teamId}/analyses/{playerId|_lineup}   cached Coach Z text + lastAnalyzedAbCount
 ```
 
