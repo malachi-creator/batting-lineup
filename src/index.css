@@ -493,6 +493,11 @@ table.stats td.name {
   opacity: 0.3;
 }
 
+.icon-btn.danger {
+  color: var(--red);
+  border-color: #4a2330;
+}
+
 .check {
   width: 28px;
   height: 28px;

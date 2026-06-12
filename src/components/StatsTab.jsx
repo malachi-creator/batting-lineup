@@ -208,7 +208,18 @@ function GamesLog({ players, games, allAtBats, showToast, hasActiveGame }) {
                   {line.pa} PA · {line.h} H · {line.bb} BB · {line.rbi} RBI · OBP {line.pa ? fmt3(line.obp) : "—"}
                 </div>
               </div>
-              <button className="icon-btn" onClick={() => { tap(); setEditGame({ ...g }); }}>✎</button>
+              <button className="icon-btn" aria-label="Edit game" onClick={() => { tap(); setEditGame({ ...g }); }}>✎</button>
+              <button
+                className="icon-btn danger"
+                aria-label="Delete game"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  tap();
+                  setDeleteGame(g);
+                }}
+              >
+                ✕
+              </button>
             </div>
             {open && (
               <>
@@ -274,6 +285,18 @@ function GamesLog({ players, games, allAtBats, showToast, hasActiveGame }) {
             <span>Them</span>
             <input type="number" min="0" value={editGame.themScore ?? ""} onChange={(e) => setEditGame({ ...editGame, themScore: e.target.value })} style={{ width: 64 }} />
           </div>
+          <button
+            className="btn small danger"
+            style={{ width: "100%", marginTop: 16 }}
+            onClick={() => {
+              tap();
+              const g = { ...editGame };
+              setEditGame(null);
+              setDeleteGame(g);
+            }}
+          >
+            Delete game
+          </button>
         </Dialog>
       )}
 
@@ -286,6 +309,7 @@ function GamesLog({ players, games, allAtBats, showToast, hasActiveGame }) {
         onConfirm={async () => {
           await deleteGameRecord(deleteGame.id);
           showToast("Game deleted");
+          if (openId === deleteGame.id) setOpenId(null);
           setDeleteGame(null);
         }}
         onCancel={() => setDeleteGame(null)}
