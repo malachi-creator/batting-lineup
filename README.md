@@ -98,7 +98,7 @@ VITE_MOCK=1 npm run dev
 - "New team" generates a fresh 4-digit code; anyone with the code is on the
   team (rec-league trust model, no passwords).
 - The **Me** tab is the player area: pick your name once (saved per phone) and
-  land on your own spray chart / stats every time. Switch team from Roster.
+  land on your own spray chart / stats every time. Switch team from Team.
 
 ## Data model
 

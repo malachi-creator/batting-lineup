@@ -18,7 +18,8 @@ import MeTab from "./components/MeTab.jsx";
 import ScheduleTab from "./components/ScheduleTab.jsx";
 import TeamGate from "./components/TeamGate.jsx";
 import CatchUpTab from "./components/CatchUpTab.jsx";
-import { parseCatchUpHash, clearCatchUpHash } from "./catchUp.js";
+import { clearCatchUpHash } from "./catchUp.js";
+import { parseAppHash, setAppTabHash } from "./nav.js";
 import { useSyncStatus } from "./hooks/useSyncStatus.js";
 import { tap } from "./haptics.js";
 import { buildGameFromSchedule, getAutoStartEnabled, shouldAutoStart } from "./schedule.js";
@@ -42,9 +43,11 @@ const ROSTER = [
   "Brian",
 ];
 
+const initialRoute = parseAppHash(window.location.hash);
+
 export default function App() {
   const [team, setTeamState] = useState(getTeamId());
-  const [tab, setTab] = useState("game");
+  const [tab, setTab] = useState(initialRoute.mode === "main" ? initialRoute.tab : "game");
   const [players, setPlayers] = useState(null);
   const [games, setGames] = useState(null);
   const [schedule, setSchedule] = useState(null);
@@ -52,17 +55,33 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [installEvt, setInstallEvt] = useState(null);
   const [dbError, setDbError] = useState(null);
-  const [catchUp, setCatchUp] = useState(() => parseCatchUpHash(window.location.hash));
+  const [catchUp, setCatchUp] = useState(initialRoute.mode === "catch-up" ? initialRoute.catchUp : null);
   const seeded = useRef(false);
   const scheduleSeeded = useRef(false);
   const autoStarted = useRef(false);
   const toastTimer = useRef(null);
 
   useEffect(() => {
-    const onHash = () => setCatchUp(parseCatchUpHash(window.location.hash));
+    const hash = window.location.hash;
+    if (!hash || hash === "#") setAppTabHash(tab);
+
+    const onHash = () => {
+      const route = parseAppHash(window.location.hash);
+      if (route.mode === "catch-up") {
+        setCatchUp(route.catchUp);
+        return;
+      }
+      setCatchUp(null);
+      setTab(route.tab);
+    };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
+
+  const navigateToTab = (key) => {
+    setTab(key);
+    setAppTabHash(key);
+  };
 
   // Roster — the founding team's roster is preloaded on first launch
   useEffect(() => {
@@ -176,6 +195,7 @@ export default function App() {
       ...buildGameFromSchedule(entry, present),
       createdAt: serverTimestamp(),
     }).then(() => {
+      navigateToTab("game");
       showToast(`Game started vs ${entry.opponent || "opponent"}`);
     });
   }, [players, games, schedule, activeGame]);
@@ -213,8 +233,9 @@ export default function App() {
   }
 
   const exitCatchUp = () => {
-    clearCatchUpHash();
     setCatchUp(null);
+    setTab("game");
+    clearCatchUpHash("game");
   };
 
   if (catchUp) {
@@ -289,12 +310,19 @@ export default function App() {
           <ScheduleTab schedule={schedule} games={games} showToast={showToast} />
         )}
         {tab === "stats" && (
-          <StatsTab players={players} games={games} allAtBats={allAtBats} showToast={showToast} hasActiveGame={!!activeGame} />
+          <StatsTab
+            players={players}
+            games={games}
+            allAtBats={allAtBats}
+            showToast={showToast}
+            hasActiveGame={!!activeGame}
+            onGoToGame={() => navigateToTab("game")}
+          />
         )}
         {tab === "me" && (
           <MeTab players={players} games={games} allAtBats={allAtBats} showToast={showToast} />
         )}
-        {tab === "roster" && <RosterTab players={players} showToast={showToast} />}
+        {tab === "team" && <RosterTab players={players} showToast={showToast} />}
       </main>
 
       <nav className="tabbar">
@@ -303,17 +331,18 @@ export default function App() {
           ["schedule", "Schedule"],
           ["stats", "Stats"],
           ["me", "Me"],
-          ["roster", "Roster"],
+          ["team", "Team"],
         ].map(([key, label]) => (
           <button
             key={key}
             className={tab === key ? "active" : ""}
             onClick={() => {
               tap();
-              setTab(key);
+              navigateToTab(key);
             }}
           >
             {label}
+            {key === "game" && activeGame && <span className="tab-live" aria-hidden="true" />}
           </button>
         ))}
       </nav>
