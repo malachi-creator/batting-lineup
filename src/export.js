@@ -1,4 +1,4 @@
-import { computeLine, fmt3, RESULT_LABELS } from "./stats.js";
+import { computeLine, fmt3, resultChipCode } from "./stats.js";
 
 export function filterAtBatsByDate(allAtBats, games, filter) {
   if (!filter || filter === "all") return allAtBats;
@@ -60,7 +60,7 @@ export function exportStatsCsv(players, allAtBats, games) {
   const abs = ["", "At-bats", "Date,Player,Result,Zone,Contact,RBI"];
   allAtBats.forEach((a) => {
     const p = players.find((x) => x.id === a.playerId);
-    abs.push([gameMap[a.gameId] || "", p?.name || "", a.result === "OUT" ? a.outType : a.result, a.zone || "", a.contact || "", a.rbi || 0].join(","));
+    abs.push([gameMap[a.gameId] || "", p?.name || "", resultChipCode(a), a.zone || "", a.contact || "", a.rbi || 0].join(","));
   });
   return [header, ...rows, ...abs].join("\n");
 }

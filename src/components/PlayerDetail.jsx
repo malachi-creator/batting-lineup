@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import FieldDiagram from "./FieldDiagram.jsx";
 import CoachZBlock from "./CoachZ.jsx";
-import { compactAtBats, computeLine, fmt3, OUT_TYPE_LABELS, RESULT_LABELS, ZONE_LABELS, CONTACT_LABELS, isHit, resultChipClass, resultChipCode } from "../stats.js";
+import { compactAtBats, computeLine, fmt3, formatAbResult, OUT_TYPE_LABELS, ZONE_LABELS, CONTACT_LABELS, isReachSafe, isReached, resultChipClass, resultChipCode } from "../stats.js";
 import { tap } from "../haptics.js";
 
 export default function PlayerDetail({ player, atBats, allAtBats, gameDates, onBack, backLabel = "← Team", showToast }) {
@@ -17,8 +17,11 @@ export default function PlayerDetail({ player, atBats, allAtBats, gameDates, onB
 
   // Exact-spot dots for at-bats that recorded a tap location
   const reachedPoints = atBats
-    .filter((a) => a.loc && (isHit(a) || a.result === "ROE"))
-    .map((a) => ({ ...a.loc, kind: a.result === "ROE" ? "roe" : "hit" }));
+    .filter((a) => a.loc && isReached(a))
+    .map((a) => ({
+      ...a.loc,
+      kind: isReachSafe(a) ? (a.result === "ROE" ? "roe" : "fc") : "hit",
+    }));
   const outPoints = atBats
     .filter((a) => a.loc && a.result === "OUT")
     .map((a) => ({ ...a.loc, kind: "out" }));
@@ -72,7 +75,7 @@ export default function PlayerDetail({ player, atBats, allAtBats, gameDates, onB
         <div style={{ display: "flex", gap: 8 }}>
           <div style={{ flex: 1, textAlign: "center" }}>
             <FieldDiagram heat={sprayHits} heatColor="#3DDC84" points={reachedPoints} size={220} />
-            <span className="muted">Reached ({line.h + atBats.filter((a) => a.result === "ROE").length})</span>
+            <span className="muted">Reached ({line.reached})</span>
           </div>
           <div style={{ flex: 1, textAlign: "center" }}>
             <FieldDiagram heat={sprayOuts} heatColor="#FF6B6B" points={outPoints} size={220} />
@@ -82,6 +85,7 @@ export default function PlayerDetail({ player, atBats, allAtBats, gameDates, onB
         <div className="legend" style={{ justifyContent: "center" }}>
           <span><i style={{ background: "#3DDC84" }} />Hit</span>
           <span><i style={{ background: "#FFC24B" }} />Error</span>
+          <span><i style={{ background: "#249EFF" }} />FC</span>
           <span><i style={{ background: "#FF6B6B" }} />Out</span>
         </div>
       </div>
@@ -144,7 +148,7 @@ export default function PlayerDetail({ player, atBats, allAtBats, gameDates, onB
               {resultChipCode(a)}
             </span>
             <span className="meta">
-              {a.result === "OUT" ? OUT_TYPE_LABELS[a.outType] : RESULT_LABELS[a.result]}
+              {formatAbResult(a)}
               {a.zone ? ` · ${ZONE_LABELS[a.zone]}` : ""}
               {a.contact ? ` · ${CONTACT_LABELS[a.contact]}` : ""}
               {a.rbi ? ` · ${a.rbi} RBI` : ""}

@@ -6,13 +6,14 @@ import { Dialog } from "./Dialog.jsx";
 import {
   CONTACT_LABELS,
   OUT_TYPE_LABELS,
+  PLACEMENT_RESULTS,
   RESULT_LABELS,
   ZONE_LABELS,
-  isHit,
+  needsPlacement,
 } from "../stats.js";
 import { tap } from "../haptics.js";
 
-const HIT_RESULTS = ["1B", "2B", "3B", "HR", "ROE"];
+const RESULT_OPTIONS = ["1B", "2B", "3B", "HR", "BB", "OUT", "ROE", "FC"];
 const OUT_TYPES = ["K", "GO", "FO", "PO", "LO", "FC"];
 
 export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
@@ -24,7 +25,7 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
 
   if (!open || !ab) return null;
 
-  const isHitLike = HIT_RESULTS.includes(draft?.result);
+  const inPlacementFlow = needsPlacement(draft?.result);
   const set = (fields) => setDraft((d) => ({ ...d, ...fields }));
   const place = (zone, loc) => set({ zone, loc });
 
@@ -35,7 +36,7 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
       outType: draft.result === "OUT" ? draft.outType : null,
       zone: draft.zone || null,
       loc: draft.loc || null,
-      contact: isHitLike ? draft.contact || "MED" : null,
+      contact: inPlacementFlow ? draft.contact || "MED" : null,
       rbi: draft.rbi || 0,
       twoOuts: !!draft.twoOuts,
     });
@@ -46,7 +47,7 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
     <Dialog open title={`Edit — ${playerName}`} confirmLabel="Save" cancelLabel="Cancel" onConfirm={save} onCancel={onClose}>
       <div className="step-label" style={{ marginTop: 0 }}>Result</div>
       <div className="btn-grid" style={{ marginBottom: 10 }}>
-        {["1B", "2B", "3B", "HR", "BB", "OUT", "ROE"].map((r) => (
+        {RESULT_OPTIONS.map((r) => (
           <button
             key={r}
             className={`btn${draft.result === r ? " selected" : ""}`}
@@ -57,7 +58,7 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
                 outType: r === "OUT" ? draft.outType : null,
                 zone: r === "BB" || r === "OUT" && !draft.outType ? null : draft.zone,
                 loc: r === "BB" ? null : draft.loc,
-                contact: HIT_RESULTS.includes(r) ? draft.contact : null,
+                contact: PLACEMENT_RESULTS.includes(r) ? draft.contact : null,
               });
             }}
           >
@@ -79,14 +80,14 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
         </>
       )}
 
-      {((isHitLike) || (draft.result === "OUT" && draft.outType && draft.outType !== "K")) && (
+      {(inPlacementFlow || (draft.result === "OUT" && draft.outType && draft.outType !== "K")) && (
         <>
           <div className="step-label">{draft.loc ? "Tap to move pin" : "Tap where it went"}</div>
           <FieldDiagram marker={draft.loc} onZone={place} size={200} />
         </>
       )}
 
-      {isHitLike && draft.loc && (
+      {inPlacementFlow && draft.loc && (
         <>
           <div className="step-label">Contact</div>
           <div className="btn-grid cols3" style={{ marginBottom: 10 }}>

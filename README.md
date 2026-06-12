@@ -107,7 +107,7 @@ teams/{teamId}                       name, code (join number), createdAt
 teams/{teamId}/players/{playerId}    name, orderIndex, active
 teams/{teamId}/games/{gameId}        date, opponent?, present[], final, usScore?, themScore?, result? (W|L|T)
 teams/{teamId}/games/{gameId}/atBats/{abId}
-    playerId, seq, result (1B|2B|3B|HR|BB|OUT|ROE),
+    playerId, seq, result (1B|2B|3B|HR|BB|OUT|ROE|FC),
     zone (LF|CF|RF|IF_L|IF_M|IF_R|null), contact (HARD|MED|WEAK|null),
     outType (K|GO|FO|PO|LO|FC|null), rbi, twoOuts, createdAt,
     loc ({a, d}|null) — exact tap spot: a = angle° (-45 LF line … +45 RF

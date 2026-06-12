@@ -10,7 +10,7 @@ import { teamCol, teamDoc } from "../team.js";
 import FieldDiagram from "./FieldDiagram.jsx";
 import AtBatEditor, { updateAtBat } from "./AtBatEditor.jsx";
 import { Dialog, PromptDialog } from "./Dialog.jsx";
-import { OUT_TYPE_LABELS, RESULT_LABELS, ZONE_LABELS, resultChipClass, resultChipCode } from "../stats.js";
+import { OUT_TYPE_LABELS, RESULT_LABELS, ZONE_LABELS, formatAbResult, needsPlacement, resultChipClass, resultChipCode } from "../stats.js";
 import { tap } from "../haptics.js";
 
 export default function GameTab({ players, games, activeGame, abByGame, showToast }) {
@@ -134,12 +134,12 @@ function AtBatLogger({ game, players, atBats, showToast }) {
       zone: ab.zone || null,
       loc: ab.loc || null,
       contact: ab.contact || null,
-      outType: ab.outType || null,
+      outType: ab.result === "OUT" ? ab.outType || null : null,
       rbi: ab.rbi || 0,
       twoOuts: !!ab.twoOuts,
       createdAt: serverTimestamp(),
     });
-    showToast(`${batter.name}: ${RESULT_LABELS[ab.result]}${ab.outType ? ` (${OUT_TYPE_LABELS[ab.outType]})` : ""}`);
+    showToast(`${batter.name}: ${formatAbResult(ab)}`);
     reset();
   };
 
@@ -149,7 +149,7 @@ function AtBatLogger({ game, players, atBats, showToast }) {
     const last = atBats.reduce((a, b) => (a.seq > b.seq ? a : b));
     const who = players.find((p) => p.id === last.playerId);
     await deleteDoc(doc(teamCol("games", game.id, "atBats"), last.id));
-    showToast(`Undid ${who?.name || "last"}: ${RESULT_LABELS[last.result] || ""}`);
+    showToast(`Undid ${who?.name || "last"}: ${formatAbResult(last)}`);
     reset();
   };
 
@@ -189,14 +189,14 @@ function AtBatLogger({ game, players, atBats, showToast }) {
     setPending((p) => ({ ...p, ...fields }));
   };
 
-  const isHitLike = ["1B", "2B", "3B", "HR", "ROE"].includes(pending.result);
+  const inPlacementFlow = needsPlacement(pending.result);
 
   let step = "result";
   if (pending.result === "OUT" && !pending.outType) step = "outType";
   else if (pending.result === "OUT" && pending.outType && pending.outType !== "K" && !pending.loc) step = "placement";
   else if (pending.result === "OUT" && pending.outType && pending.outType !== "K" && pending.loc) step = "outConfirm";
-  else if (isHitLike && !pending.loc) step = "placement";
-  else if (isHitLike && pending.loc) step = "contact";
+  else if (inPlacementFlow && !pending.loc) step = "placement";
+  else if (inPlacementFlow && pending.loc) step = "contact";
 
   const placeBall = (zone, loc) => choose({ zone, loc });
   const placementLabel = pending.loc ? "Tap again to move the pin" : "Tap exactly where the ball landed";
@@ -227,7 +227,8 @@ function AtBatLogger({ game, players, atBats, showToast }) {
             <button className="btn" onClick={() => choose({ result: "HR" })}>Home Run</button>
             <button className="btn" onClick={() => save({ result: "BB" })}>Walk</button>
             <button className="btn" onClick={() => choose({ result: "OUT" })}>Out</button>
-            <button className="btn span2" onClick={() => choose({ result: "ROE", outType: null })}>Reached on Error</button>
+            <button className="btn" onClick={() => choose({ result: "ROE", outType: null })}>Reached on Error</button>
+            <button className="btn" onClick={() => choose({ result: "FC", outType: null })}>Fielder's Choice</button>
           </div>
         </>
       )}
@@ -241,7 +242,6 @@ function AtBatLogger({ game, players, atBats, showToast }) {
             <button className="btn" onClick={() => choose({ outType: "FO" })}>Fly out</button>
             <button className="btn" onClick={() => choose({ outType: "PO" })}>Pop-up</button>
             <button className="btn" onClick={() => choose({ outType: "LO" })}>Line out</button>
-            <button className="btn" onClick={() => choose({ outType: "FC" })}>Force / FC</button>
           </div>
         </>
       )}
@@ -261,7 +261,7 @@ function AtBatLogger({ game, players, atBats, showToast }) {
         </>
       )}
 
-      {step === "contact" && isHitLike && (
+      {step === "contact" && inPlacementFlow && (
         <>
           <div className="step-label">Contact — {RESULT_LABELS[pending.result]}{pending.zone ? ` · ${ZONE_LABELS[pending.zone]}` : ""}</div>
           <FieldDiagram marker={pending.loc} onZone={placeBall} />

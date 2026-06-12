@@ -8,9 +8,14 @@ export const RESULT_LABELS = {
   BB: "Walk",
   OUT: "Out",
   ROE: "Error",
+  FC: "Fielder's Choice",
 };
 
 export const HIT_RESULTS = ["1B", "2B", "3B", "HR"];
+// Safe reach without a hit — same AB/OBP treatment as ROE.
+export const REACH_SAFE_RESULTS = ["ROE", "FC"];
+// Hits + safe reaches: need placement and contact steps when logging.
+export const PLACEMENT_RESULTS = [...HIT_RESULTS, ...REACH_SAFE_RESULTS];
 export const BASES = { "1B": 1, "2B": 2, "3B": 3, HR: 4 };
 
 export const OUT_TYPE_LABELS = {
@@ -19,7 +24,7 @@ export const OUT_TYPE_LABELS = {
   FO: "Fly out",
   PO: "Pop-up",
   LO: "Line out",
-  FC: "Fielder's choice",
+  FC: "Force out", // legacy: logged under OUT before FC became its own result
 };
 
 export const ZONES = ["LF", "CF", "RF", "IF_L", "IF_M", "IF_R"];
@@ -38,10 +43,23 @@ export function isHit(ab) {
   return HIT_RESULTS.includes(ab.result);
 }
 
-/** CSS class for at-bat result chips (hit / walk / error / out). */
+export function isReachSafe(ab) {
+  return REACH_SAFE_RESULTS.includes(ab.result);
+}
+
+export function isReached(ab) {
+  return isHit(ab) || isReachSafe(ab);
+}
+
+export function needsPlacement(result) {
+  return PLACEMENT_RESULTS.includes(result);
+}
+
+/** CSS class for at-bat result chips (hit / walk / error / fc / out). */
 export function resultChipClass(ab) {
   if (ab.result === "BB") return "bb";
   if (ab.result === "ROE") return "roe";
+  if (ab.result === "FC") return "fc";
   if (isHit(ab)) return "hit";
   return "out";
 }
@@ -53,7 +71,13 @@ export function resultChipCode(ab) {
   return ab.result;
 }
 
-// Standard-ish scoring: ROE counts as an at-bat but not a hit or time on base.
+/** Human-readable result for toasts and meta lines. */
+export function formatAbResult(ab) {
+  if (ab.result === "OUT") return OUT_TYPE_LABELS[ab.outType] || RESULT_LABELS.OUT;
+  return RESULT_LABELS[ab.result] || ab.result;
+}
+
+// Standard-ish scoring: ROE/FC count as an at-bat but not a hit or OBP reach.
 export function computeLine(atBats) {
   const pa = atBats.length;
   const bb = atBats.filter((a) => a.result === "BB").length;
@@ -61,6 +85,7 @@ export function computeLine(atBats) {
   const ab = pa - bb;
   const tb = atBats.reduce((s, a) => s + (BASES[a.result] || 0), 0);
   const rbi = atBats.reduce((s, a) => s + (a.rbi || 0), 0);
+  const reached = atBats.filter(isReached).length;
 
   const outMix = {};
   atBats
@@ -74,12 +99,12 @@ export function computeLine(atBats) {
     if (a.contact) contactMix[a.contact]++;
   });
 
-  // Spray: every ball in play, split reached (hits + ROE) vs outs
+  // Spray: every ball in play, split reached (hits + ROE + FC) vs outs
   const spray = {};
   ZONES.forEach((z) => (spray[z] = { hits: 0, outs: 0 }));
   atBats.forEach((a) => {
     if (!a.zone || !spray[a.zone]) return;
-    if (isHit(a) || a.result === "ROE") spray[a.zone].hits++;
+    if (isReached(a)) spray[a.zone].hits++;
     else if (a.result === "OUT") spray[a.zone].outs++;
   });
 
@@ -90,6 +115,7 @@ export function computeLine(atBats) {
     bb,
     tb,
     rbi,
+    reached,
     avg: ab ? h / ab : 0,
     obp: pa ? (h + bb) / pa : 0,
     slg: ab ? tb / ab : 0,

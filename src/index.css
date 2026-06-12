@@ -643,6 +643,10 @@ table.stats td.name {
   color: var(--amber);
 }
 
+.ab-chip .res.fc {
+  color: var(--blue);
+}
+
 .ab-chip .meta {
   color: var(--text-dim);
   flex: 1;

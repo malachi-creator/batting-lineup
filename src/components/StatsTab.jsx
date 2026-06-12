@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { getDocs, query, updateDoc, writeBatch } from "firebase/firestore";
 import { db } from "../firebase.js";
-import { computeLine, fmt3 } from "../stats.js";
+import { computeLine, fmt3, resultChipCode } from "../stats.js";
 import { teamCol, teamDoc } from "../team.js";
 import PlayerDetail from "./PlayerDetail.jsx";
 import LineupCheck from "./LineupCheck.jsx";
@@ -224,7 +224,7 @@ function GamesLog({ players, games, allAtBats, showToast, hasActiveGame }) {
                           <td>{l.h}</td>
                           <td>{l.bb}</td>
                           <td>{l.rbi}</td>
-                          <td className="muted" style={{ fontSize: 12 }}>{pabs.map((a) => (a.result === "OUT" ? a.outType : a.result)).join(" ")}</td>
+                          <td className="muted" style={{ fontSize: 12 }}>{pabs.map((a) => resultChipCode(a)).join(" ")}</td>
                         </tr>
                       );
                     })}

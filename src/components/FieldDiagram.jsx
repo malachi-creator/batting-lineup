@@ -51,7 +51,7 @@ export function locToZone(loc) {
     : { L: "LF", M: "CF", R: "RF" }[slice];
 }
 
-const DOT_COLORS = { hit: "#3DDC84", roe: "#FFC24B", out: "#FF6B6B", pick: "#249EFF" };
+const DOT_COLORS = { hit: "#3DDC84", roe: "#FFC24B", fc: "#249EFF", out: "#FF6B6B", pick: "#249EFF" };
 
 function clientToLoc(clientX, clientY, svg) {
   const p = new DOMPoint(clientX, clientY).matrixTransform(svg.getScreenCTM().inverse());
