@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>Pezley Batting</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div>
+        <p class="eyebrow">Slow-pitch lineup</p>
+        <h1>Pezley Batting</h1>
+      </div>
+      <button type="button" class="btn btn-ghost" id="settings-toggle" aria-expanded="false">
+        Team
+      </button>
+    </header>
+
+    <section class="panel settings-panel hidden" id="settings-panel">
+      <h2>Team access</h2>
+      <p class="hint">Required for AI lineup features. Ask your coach for your team ID and code.</p>
+      <label>
+        Team ID
+        <input type="text" id="team-id" autocomplete="off" placeholder="your-team-id" />
+      </label>
+      <label>
+        Team code
+        <input type="text" id="team-code" autocomplete="off" placeholder="1234" />
+      </label>
+      <button type="button" class="btn btn-secondary" id="save-settings">Save</button>
+    </section>
+
+    <main>
+      <section class="panel">
+        <div class="section-head">
+          <h2>Batting lineup</h2>
+          <button type="button" class="btn btn-secondary" id="add-player">Add player</button>
+        </div>
+        <ol class="lineup" id="lineup-list"></ol>
+      </section>
+
+      <section class="panel ai-panel">
+        <div class="section-head">
+          <h2>Coach Z AI</h2>
+        </div>
+        <p class="hint">Get advice or let AI reorder your lineup based on OBP, AVG, and contact mix.</p>
+        <div class="ai-actions">
+          <button type="button" class="btn btn-secondary" id="review-lineup">Review lineup</button>
+          <button type="button" class="btn btn-primary" id="adjust-lineup">Adjust lineup with AI</button>
+        </div>
+        <div class="ai-result hidden" id="ai-result">
+          <p class="ai-label">Coach says</p>
+          <p class="ai-text" id="ai-text"></p>
+          <ul class="changes hidden" id="ai-changes"></ul>
+          <button type="button" class="btn btn-primary hidden" id="apply-lineup">Apply suggested order</button>
+        </div>
+        <p class="error hidden" id="ai-error"></p>
+      </section>
+    </main>
+
+    <template id="player-row-template">
+      <li class="player-row">
+        <span class="slot"></span>
+        <div class="player-fields">
+          <input type="text" class="name" placeholder="Player name" />
+          <div class="stats">
+            <label>PA <input type="number" class="pa" min="0" step="1" /></label>
+            <label>OBP <input type="number" class="obp" min="0" max="1" step="0.001" /></label>
+            <label>AVG <input type="number" class="avg" min="0" max="1" step="0.001" /></label>
+            <label>SLG <input type="number" class="slg" min="0" max="2" step="0.001" /></label>
+          </div>
+        </div>
+        <div class="row-actions">
+          <button type="button" class="icon-btn move-up" title="Move up">↑</button>
+          <button type="button" class="icon-btn move-down" title="Move down">↓</button>
+          <button type="button" class="icon-btn remove" title="Remove">×</button>
+        </div>
+      </li>
+    </template>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
