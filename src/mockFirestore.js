@@ -42,6 +42,9 @@ function snapshotOf(q) {
       return dir === "desc" ? -c : c;
     });
   }
+  if (q.limit) {
+    docs = docs.slice(0, q.limit.n);
+  }
   return { docs, empty: docs.length === 0, metadata: { fromCache: false } };
 }
 
@@ -73,23 +76,30 @@ export function doc(dbOrCol, ...segs) {
 
 export const orderBy = (field, dir = "asc") => ({ qc: "order", field, dir });
 export const where = (field, op, value) => ({ qc: "where", field, op, value });
+export const limit = (n) => ({ qc: "limit", n });
 
 export function query(col, ...constraints) {
   const order = constraints.find((c) => c && c.qc === "order");
   const wheres = constraints.filter((c) => c && c.qc === "where");
-  return { colPath: col.path, order, wheres };
+  const lim = constraints.find((c) => c && c.qc === "limit");
+  return { colPath: col.path, order, wheres, limit: lim };
 }
 
-export function onSnapshot(q, cb) {
+export function onSnapshot(q, cb, opts) {
   const colPath = q.colPath || q.path;
-  const l = { colPath, fire: () => cb(snapshotOf({ colPath, order: q.order, wheres: q.wheres })) };
+  const fire = () => {
+    const snap = snapshotOf({ colPath, order: q.order, wheres: q.wheres, limit: q.limit });
+    snap.metadata.hasPendingWrites = false;
+    cb(snap);
+  };
+  const l = { colPath, fire };
   listeners.add(l);
-  queueMicrotask(l.fire);
+  queueMicrotask(fire);
   return () => listeners.delete(l);
 }
 
 export async function getDocs(q) {
-  return snapshotOf({ colPath: q.colPath || q.path, order: q.order, wheres: q.wheres });
+  return snapshotOf({ colPath: q.colPath || q.path, order: q.order, wheres: q.wheres, limit: q.limit });
 }
 
 export const getDocsFromServer = getDocs;

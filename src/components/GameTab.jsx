@@ -10,7 +10,7 @@ import { teamCol, teamDoc } from "../team.js";
 import FieldDiagram from "./FieldDiagram.jsx";
 import AtBatEditor, { updateAtBat } from "./AtBatEditor.jsx";
 import { Dialog, PromptDialog } from "./Dialog.jsx";
-import { OUT_TYPE_LABELS, RESULT_LABELS, ZONE_LABELS } from "../stats.js";
+import { OUT_TYPE_LABELS, RESULT_LABELS, ZONE_LABELS, resultChipClass, resultChipCode } from "../stats.js";
 import { tap } from "../haptics.js";
 
 export default function GameTab({ players, games, activeGame, abByGame, showToast }) {
@@ -126,9 +126,10 @@ function AtBatLogger({ game, players, atBats, showToast }) {
   const save = (fields) => {
     tap(20);
     const ab = { ...pending, ...fields };
+    const nextSeq = atBats.length === 0 ? 0 : Math.max(...atBats.map((a) => a.seq ?? 0)) + 1;
     addDoc(teamCol("games", game.id, "atBats"), {
       playerId: batter.id,
-      seq: atBats.length,
+      seq: nextSeq,
       result: ab.result,
       zone: ab.zone || null,
       loc: ab.loc || null,
@@ -142,12 +143,12 @@ function AtBatLogger({ game, players, atBats, showToast }) {
     reset();
   };
 
-  const undo = () => {
-    if (atBats.length === 0) return;
+  const undo = async () => {
+    if (pending.result !== null || atBats.length === 0) return;
     tap(30);
-    const last = atBats[atBats.length - 1];
+    const last = atBats.reduce((a, b) => (a.seq > b.seq ? a : b));
     const who = players.find((p) => p.id === last.playerId);
-    deleteDoc(doc(teamCol("games", game.id, "atBats"), last.id));
+    await deleteDoc(doc(teamCol("games", game.id, "atBats"), last.id));
     showToast(`Undid ${who?.name || "last"}: ${RESULT_LABELS[last.result] || ""}`);
     reset();
   };
@@ -226,7 +227,7 @@ function AtBatLogger({ game, players, atBats, showToast }) {
             <button className="btn" onClick={() => choose({ result: "HR" })}>Home Run</button>
             <button className="btn" onClick={() => save({ result: "BB" })}>Walk</button>
             <button className="btn" onClick={() => choose({ result: "OUT" })}>Out</button>
-            <button className="btn span2" onClick={() => choose({ result: "ROE" })}>Reached on Error</button>
+            <button className="btn span2" onClick={() => choose({ result: "ROE", outType: null })}>Reached on Error</button>
           </div>
         </>
       )}
@@ -283,8 +284,8 @@ function AtBatLogger({ game, players, atBats, showToast }) {
             const who = players.find((p) => p.id === a.playerId);
             return (
               <div key={a.id} className="ab-chip row-tap" onClick={() => { tap(); setEditAb(a); }}>
-                <span className={`res ${a.result === "BB" ? "bb" : ["1B", "2B", "3B", "HR"].includes(a.result) ? "hit" : "out"}`}>
-                  {a.result === "OUT" ? a.outType : a.result}
+                <span className={`res ${resultChipClass(a)}`}>
+                  {resultChipCode(a)}
                 </span>
                 <span className="meta grow">{who?.name} · tap to edit</span>
               </div>
@@ -310,8 +311,11 @@ function AtBatLogger({ game, players, atBats, showToast }) {
       )}
 
       <div className="logger-footer">
-        <button className="btn small danger" onClick={undo} disabled={atBats.length === 0}>↩ Undo</button>
-        {step !== "result" && <button className="btn small" onClick={reset}>Cancel</button>}
+        {pending.result === null ? (
+          <button className="btn small danger" onClick={undo} disabled={atBats.length === 0}>↩ Undo</button>
+        ) : (
+          <button className="btn small" onClick={reset}>Cancel</button>
+        )}
         <button className="btn small" style={{ color: "var(--text-dim)" }} onClick={() => setEndConfirm(true)}>End Game</button>
       </div>
 

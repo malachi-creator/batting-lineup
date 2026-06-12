@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import FieldDiagram from "./FieldDiagram.jsx";
 import CoachZBlock from "./CoachZ.jsx";
-import { compactAtBats, computeLine, fmt3, OUT_TYPE_LABELS, RESULT_LABELS, ZONE_LABELS, CONTACT_LABELS, isHit } from "../stats.js";
+import { compactAtBats, computeLine, fmt3, OUT_TYPE_LABELS, RESULT_LABELS, ZONE_LABELS, CONTACT_LABELS, isHit, resultChipClass, resultChipCode } from "../stats.js";
 import { tap } from "../haptics.js";
 
 export default function PlayerDetail({ player, atBats, allAtBats, gameDates, onBack, backLabel = "← Team", showToast }) {
@@ -140,8 +140,8 @@ export default function PlayerDetail({ player, atBats, allAtBats, gameDates, onB
         {last10.length === 0 && <p className="muted">Nothing logged yet.</p>}
         {last10.map((a) => (
           <div className="ab-chip" key={a.id}>
-            <span className={`res ${isHit(a) ? "hit" : a.result === "BB" ? "bb" : "out"}`}>
-              {a.result === "OUT" ? a.outType : a.result}
+            <span className={`res ${resultChipClass(a)}`}>
+              {resultChipCode(a)}
             </span>
             <span className="meta">
               {a.result === "OUT" ? OUT_TYPE_LABELS[a.outType] : RESULT_LABELS[a.result]}

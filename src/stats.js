@@ -38,6 +38,21 @@ export function isHit(ab) {
   return HIT_RESULTS.includes(ab.result);
 }
 
+/** CSS class for at-bat result chips (hit / walk / error / out). */
+export function resultChipClass(ab) {
+  if (ab.result === "BB") return "bb";
+  if (ab.result === "ROE") return "roe";
+  if (isHit(ab)) return "hit";
+  return "out";
+}
+
+/** Short code shown on at-bat result chips. */
+export function resultChipCode(ab) {
+  if (ab.result === "OUT") return ab.outType || "OUT";
+  if (ab.result === "ROE") return "Err";
+  return ab.result;
+}
+
 // Standard-ish scoring: ROE counts as an at-bat but not a hit or time on base.
 export function computeLine(atBats) {
   const pa = atBats.length;
