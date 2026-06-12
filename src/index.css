@@ -124,6 +124,16 @@ h3 {
   color: var(--blue);
 }
 
+.tabbar button .tab-live {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background: var(--green);
+  vertical-align: middle;
+}
+
 /* Generic big tap buttons */
 .btn {
   display: flex;

@@ -17,7 +17,7 @@ import {
 import { tap } from "../haptics.js";
 import { copyCatchUpLink } from "../catchUp.js";
 
-export default function StatsTab({ players, games, allAtBats, showToast, hasActiveGame }) {
+export default function StatsTab({ players, games, allAtBats, showToast, hasActiveGame, onGoToGame }) {
   const [view, setView] = useState("team");
   const [playerId, setPlayerId] = useState(null);
   const [dateFilter, setDateFilter] = useState("all");
@@ -96,6 +96,7 @@ export default function StatsTab({ players, games, allAtBats, showToast, hasActi
           allAtBats={allAtBats}
           showToast={showToast}
           hasActiveGame={hasActiveGame}
+          onGoToGame={onGoToGame}
         />
       )}
     </div>
@@ -162,7 +163,7 @@ function TeamTable({ players, allAtBats, onPlayer }) {
   );
 }
 
-function GamesLog({ players, games, allAtBats, showToast, hasActiveGame }) {
+function GamesLog({ players, games, allAtBats, showToast, hasActiveGame, onGoToGame }) {
   const [openId, setOpenId] = useState(null);
   const [editGame, setEditGame] = useState(null);
   const [deleteGame, setDeleteGame] = useState(null);
@@ -322,7 +323,8 @@ function GamesLog({ players, games, allAtBats, showToast, hasActiveGame }) {
         confirmLabel="Reopen"
         onConfirm={async () => {
           await updateDoc(teamDoc("games", reopenGame.id), { final: false });
-          showToast("Game reopened — check Game tab");
+          onGoToGame?.();
+          showToast("Game reopened");
           setReopenGame(null);
         }}
         onCancel={() => setReopenGame(null)}

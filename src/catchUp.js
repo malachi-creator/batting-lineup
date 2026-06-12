@@ -16,9 +16,9 @@ export function parseCatchUpHash(hash) {
   return { gameId, playerId };
 }
 
-export function clearCatchUpHash() {
+export function clearCatchUpHash(tab = "game") {
   const base = window.location.pathname + window.location.search;
-  window.history.replaceState(null, "", base);
+  window.history.replaceState(null, "", `${base}#/${tab}`);
 }
 
 export async function copyCatchUpLink(gameId, playerId, showToast) {
