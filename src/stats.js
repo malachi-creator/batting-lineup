@@ -26,6 +26,36 @@ export const REACH_SAFE_RESULTS = ["ROE", "FC"];
 export const PLACEMENT_RESULTS = [...HIT_RESULTS, ...REACH_SAFE_RESULTS];
 export const BASES = { "1B": 1, "2B": 2, "3B": 3, HR: 4 };
 
+export const ENDED_BASE_LABELS = { 1: "1st", 2: "2nd", 3: "3rd", 4: "Home" };
+
+/** Bases earned on the hit/reach (not counting extra bases on a later error). */
+export function baseEarned(ab) {
+  const b = BASES[ab.result];
+  if (b) return b;
+  if (ab.result === "BB" || isReachSafe(ab)) return 1;
+  return 0;
+}
+
+/** True when the batter could take extra bases after a wild throw, drop, etc. */
+export function canAdvanceOnError(result) {
+  const b = BASES[result] || (result === "BB" || REACH_SAFE_RESULTS.includes(result) ? 1 : 0);
+  return b >= 1 && b < 4;
+}
+
+/** Ending bases available beyond what the result already credits. */
+export function advanceBaseOptions(result) {
+  const start = BASES[result] || (result === "BB" || REACH_SAFE_RESULTS.includes(result) ? 1 : 0);
+  const opts = [];
+  for (let b = start + 1; b <= 4; b++) opts.push(b);
+  return opts;
+}
+
+export function normalizeEndedBase(ab) {
+  const earned = baseEarned(ab);
+  const ended = ab.endedBase;
+  return ended && ended > earned ? ended : null;
+}
+
 export const OUT_TYPE_LABELS = {
   K: "Strikeout",
   GO: "Ground out",
@@ -109,11 +139,14 @@ export function resultChipCode(ab) {
 /** Human-readable result for toasts and meta lines. */
 export function formatAbResult(ab) {
   if (ab.result === "OUT") return OUT_TYPE_LABELS[ab.outType] || RESULT_LABELS.OUT;
-  const base = RESULT_LABELS[ab.result] || ab.result;
+  const label = RESULT_LABELS[ab.result] || ab.result;
+  let text = label;
   if (ab.ballType && BALL_TYPE_SHORT[ab.ballType] && isReached(ab)) {
-    return `${BALL_TYPE_SHORT[ab.ballType]} ${base.toLowerCase()}`;
+    text = `${BALL_TYPE_SHORT[ab.ballType]} ${label.toLowerCase()}`;
   }
-  return base;
+  const ended = normalizeEndedBase(ab);
+  if (ended) text += ` · ${ENDED_BASE_LABELS[ended]} (E)`;
+  return text;
 }
 
 // Standard-ish scoring: ROE/FC count as an at-bat but not a hit or OBP reach.
@@ -178,6 +211,7 @@ export function compactAtBats(atBats, gameDates) {
     if (a.ballType) c.b = a.ballType;
     if (a.outType) c.o = a.outType;
     if (a.rbi) c.rbi = a.rbi;
+    if (normalizeEndedBase(a)) c.ended = normalizeEndedBase(a);
     if (a.twoOuts) c.two_outs = true;
     if (gameDates && gameDates[a.gameId]) c.game = gameDates[a.gameId];
     return c;

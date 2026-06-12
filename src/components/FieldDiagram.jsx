@@ -53,6 +53,33 @@ export function locToZone(loc) {
 
 const DOT_COLORS = { hit: "#3DDC84", roe: "#FFC24B", fc: "#249EFF", out: "#FF6B6B", pick: "#249EFF" };
 
+// How high the ball flight arc peaks (fraction of chord length).
+function arcScale(p) {
+  if (p.ballType === "FO" || p.ballType === "PO" || p.outType === "FO" || p.outType === "PO") return 0.38;
+  if (p.ballType === "LO" || p.outType === "LO") return 0.24;
+  if (p.ballType === "GO" || p.outType === "GO") return 0.05;
+  if (p.result === "HR") return 0.48;
+  if (p.result === "2B" || p.result === "3B") return 0.3;
+  if (p.d < 0.3) return 0.28;
+  if (p.d > 0.75) return 0.22;
+  return 0.16;
+}
+
+function trajectoryPath(loc, scale) {
+  const end = pt(loc.a, loc.d * R_OUT);
+  const dx = end.x - HOME.x;
+  const dy = end.y - HOME.y;
+  const chord = Math.hypot(dx, dy) || 1;
+  const peak = chord * scale;
+  const midX = (HOME.x + end.x) / 2;
+  const midY = (HOME.y + end.y) / 2;
+  const ctrl = {
+    x: midX + (dx / chord) * peak * 0.12,
+    y: midY + (dy / chord) * peak * 0.12 - peak,
+  };
+  return `M ${HOME.x} ${HOME.y} Q ${ctrl.x} ${ctrl.y} ${end.x} ${end.y}`;
+}
+
 function clientToLoc(clientX, clientY, svg) {
   const p = new DOMPoint(clientX, clientY).matrixTransform(svg.getScreenCTM().inverse());
   const dx = p.x - HOME.x;
@@ -119,6 +146,16 @@ export default function FieldDiagram({ onZone, marker, heat, heatColor = "#249EF
           />
         )}
 
+        {!onZone && (points || []).map((p, i) => (
+          <path
+            key={`traj-${i}`}
+            className="field-trajectory"
+            d={trajectoryPath(p, arcScale(p))}
+            stroke={DOT_COLORS[p.kind] || DOT_COLORS.out}
+            pointerEvents="none"
+          />
+        ))}
+
         {(points || []).map((p, i) => {
           const c = pt(p.a, p.d * R_OUT);
           return (
@@ -126,11 +163,11 @@ export default function FieldDiagram({ onZone, marker, heat, heatColor = "#249EF
               key={i}
               cx={c.x}
               cy={c.y}
-              r={8}
+              r={6}
               fill={DOT_COLORS[p.kind] || DOT_COLORS.out}
               stroke="#0A1628"
               strokeWidth={2}
-              opacity={0.9}
+              opacity={0.95}
               pointerEvents="none"
             />
           );

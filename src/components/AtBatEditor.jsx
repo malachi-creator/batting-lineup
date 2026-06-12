@@ -8,12 +8,17 @@ import {
   BALL_TYPES,
   CONTACT_LABELS,
   EDIT_OUT_TYPES,
+  ENDED_BASE_LABELS,
   OUT_TYPE_LABELS,
   PLACEMENT_RESULTS,
   RESULT_LABELS,
   ZONE_LABELS,
+  advanceBaseOptions,
+  baseEarned,
+  canAdvanceOnError,
   needsPlacement,
   needsBallType,
+  normalizeEndedBase,
 } from "../stats.js";
 import { tap } from "../haptics.js";
 
@@ -44,6 +49,7 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
       contact: inPlacementFlow ? draft.contact || "MED" : null,
       rbi: draft.rbi || 0,
       twoOuts: !!draft.twoOuts,
+      endedBase: normalizeEndedBase(draft),
     });
     onClose();
   };
@@ -65,6 +71,7 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
                 zone: r === "BB" || r === "OUT" && !draft.outType ? null : draft.zone,
                 loc: r === "BB" ? null : draft.loc,
                 contact: PLACEMENT_RESULTS.includes(r) ? draft.contact : null,
+                endedBase: canAdvanceOnError(r) ? draft.endedBase : null,
               });
             }}
           >
@@ -113,6 +120,29 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
             {["HARD", "MED", "WEAK"].map((c) => (
               <button key={c} className={`btn${draft.contact === c ? " selected" : ""}`} onClick={() => { tap(); set({ contact: c }); }}>
                 {CONTACT_LABELS[c]}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {canAdvanceOnError(draft.result) && (
+        <>
+          <div className="step-label">Extra base on error</div>
+          <div className="btn-grid" style={{ marginBottom: 10 }}>
+            <button
+              className={`btn${!draft.endedBase || draft.endedBase <= baseEarned(draft) ? " selected" : ""}`}
+              onClick={() => { tap(); set({ endedBase: null }); }}
+            >
+              Stayed at {ENDED_BASE_LABELS[baseEarned(draft)]}
+            </button>
+            {advanceBaseOptions(draft.result).map((b) => (
+              <button
+                key={b}
+                className={`btn${draft.endedBase === b ? " selected" : ""}`}
+                onClick={() => { tap(); set({ endedBase: b }); }}
+              >
+                {ENDED_BASE_LABELS[b]} (E)
               </button>
             ))}
           </div>

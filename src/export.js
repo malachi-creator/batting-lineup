@@ -57,10 +57,19 @@ export function exportStatsCsv(players, allAtBats, games) {
     const l = computeLine(allAtBats.filter((a) => a.playerId === p.id));
     return [p.name, l.pa, l.ab, l.h, l.bb, l.rbi, l.ab ? fmt3(l.avg) : "", l.pa ? fmt3(l.obp) : "", l.ab ? fmt3(l.slg) : ""].join(",");
   });
-  const abs = ["", "At-bats", "Date,Player,Result,Ball,Zone,Contact,RBI"];
+  const abs = ["", "At-bats", "Date,Player,Result,Ball,Zone,Contact,EndedOnE,RBI"];
   allAtBats.forEach((a) => {
     const p = players.find((x) => x.id === a.playerId);
-    abs.push([gameMap[a.gameId] || "", p?.name || "", resultChipCode(a), a.ballType || "", a.zone || "", a.contact || "", a.rbi || 0].join(","));
+    abs.push([
+      gameMap[a.gameId] || "",
+      p?.name || "",
+      resultChipCode(a),
+      a.ballType || "",
+      a.zone || "",
+      a.contact || "",
+      a.endedBase || "",
+      a.rbi || 0,
+    ].join(","));
   });
   return [header, ...rows, ...abs].join("\n");
 }
