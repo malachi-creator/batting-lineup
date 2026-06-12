@@ -11,7 +11,7 @@ import {
 import { getTeamId, teamCol } from "../team.js";
 import FieldDiagram from "./FieldDiagram.jsx";
 import AtBatEditor, { updateAtBat } from "./AtBatEditor.jsx";
-import { OUT_TYPE_LABELS, RESULT_LABELS, ZONE_LABELS } from "../stats.js";
+import { OUT_TYPE_LABELS, RESULT_LABELS, ZONE_LABELS, formatAbResult, latestAtBat } from "../stats.js";
 import { tap } from "../haptics.js";
 
 const EMPTY_PENDING = { result: null, outType: null, zone: null, loc: null, contact: null, rbi: 0, twoOuts: false };
@@ -33,7 +33,7 @@ export default function CatchUpTab({ gameId, playerId, players, games, showToast
     if (!gameId) return;
     const q = query(teamCol("games", gameId, "atBats"), orderBy("seq"));
     return onSnapshot(q, (snap) => {
-      setAtBats(snap.docs.map((d) => ({ id: d.id, gameId, ...d.data() })));
+      setAtBats(snap.docs.map((d) => ({ gameId, ...d.data(), id: d.id })));
     });
   }, [gameId]);
 
@@ -89,13 +89,17 @@ export default function CatchUpTab({ gameId, playerId, players, games, showToast
     reset();
   };
 
-  const undo = () => {
-    if (myAtBats.length === 0) return;
+  const undo = async () => {
+    const last = latestAtBat(myAtBats);
+    if (!last?.id) return;
     tap(30);
-    const last = myAtBats[myAtBats.length - 1];
-    deleteDoc(doc(teamCol("games", game.id, "atBats"), last.id));
-    showToast(`Undid ${RESULT_LABELS[last.result] || "last at-bat"}`);
-    reset();
+    try {
+      await deleteDoc(doc(teamCol("games", game.id, "atBats"), last.id));
+      showToast(`Undid ${formatAbResult(last)}`);
+      reset();
+    } catch {
+      showToast("Couldn't undo — check connection");
+    }
   };
 
   const choose = (fields) => {
@@ -232,8 +236,12 @@ export default function CatchUpTab({ gameId, playerId, players, games, showToast
       )}
 
       <div className="logger-footer">
-        <button className="btn small danger" onClick={undo} disabled={myAtBats.length === 0}>↩ Undo</button>
-        {step !== "result" && <button className="btn small" onClick={reset}>Cancel</button>}
+        {myAtBats.length > 0 && (
+          <button className="btn small danger" onClick={undo}>↩ Undo</button>
+        )}
+        {pending.result !== null && (
+          <button className="btn small" onClick={reset}>Cancel</button>
+        )}
       </div>
 
       <AtBatEditor

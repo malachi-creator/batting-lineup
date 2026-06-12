@@ -12,7 +12,7 @@ import { LEAGUE_DIVISION, LEAGUE_HR_LIMIT, LEAGUE_LABEL, countGameHomeRuns, game
 import FieldDiagram from "./FieldDiagram.jsx";
 import AtBatEditor, { updateAtBat } from "./AtBatEditor.jsx";
 import { Dialog, PromptDialog } from "./Dialog.jsx";
-import { BALL_TYPE_LABELS, BALL_TYPES, GAME_RESULT_LABELS, OUT_TYPE_LABELS, OUT_TYPES, RESULT_LABELS, ZONE_LABELS, formatAbResult, needsBallType, needsPlacement, resultChipClass, resultChipCode } from "../stats.js";
+import { BALL_TYPE_LABELS, BALL_TYPES, GAME_RESULT_LABELS, OUT_TYPE_LABELS, OUT_TYPES, RESULT_LABELS, ZONE_LABELS, formatAbResult, latestAtBat, needsBallType, needsPlacement, resultChipClass, resultChipCode } from "../stats.js";
 import { tap } from "../haptics.js";
 
 export default function GameTab({ players, games, activeGame, abByGame, showToast }) {
@@ -158,13 +158,17 @@ function AtBatLogger({ game, players, atBats, showToast }) {
   };
 
   const undo = async () => {
-    if (pending.result !== null || atBats.length === 0) return;
+    const last = latestAtBat(atBats);
+    if (!last?.id) return;
     tap(30);
-    const last = atBats.reduce((a, b) => (a.seq > b.seq ? a : b));
-    const who = players.find((p) => p.id === last.playerId);
-    await deleteDoc(doc(teamCol("games", game.id, "atBats"), last.id));
-    showToast(`Undid ${who?.name || "last"}: ${formatAbResult(last)}`);
-    reset();
+    try {
+      const who = players.find((p) => p.id === last.playerId);
+      await deleteDoc(doc(teamCol("games", game.id, "atBats"), last.id));
+      showToast(`Undid ${who?.name || "last"}: ${formatAbResult(last)}`);
+      reset();
+    } catch {
+      showToast("Couldn't undo — check connection");
+    }
   };
 
   const finishGame = async () => {
@@ -373,9 +377,10 @@ function AtBatLogger({ game, players, atBats, showToast }) {
       )}
 
       <div className="logger-footer">
-        {pending.result === null ? (
-          <button className="btn small danger" onClick={undo} disabled={atBats.length === 0}>↩ Undo</button>
-        ) : (
+        {atBats.length > 0 && (
+          <button className="btn small danger" onClick={undo}>↩ Undo</button>
+        )}
+        {pending.result !== null && (
           <button className="btn small" onClick={reset}>Cancel</button>
         )}
         <button className="btn small" style={{ color: "var(--text-dim)" }} onClick={() => setEndConfirm(true)}>End Game</button>

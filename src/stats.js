@@ -90,6 +90,12 @@ export function needsBallType(result) {
   return result === "1B" || REACH_SAFE_RESULTS.includes(result);
 }
 
+/** Last logged at-bat by seq (handles missing/duplicate seq). */
+export function latestAtBat(atBats) {
+  if (!atBats.length) return null;
+  return atBats.reduce((a, b) => ((a.seq ?? 0) >= (b.seq ?? 0) ? a : b));
+}
+
 /** CSS class for at-bat result chips (hit / walk / error / fc / out). */
 export function resultChipClass(ab) {
   if (ab.result === "BB") return "bb";

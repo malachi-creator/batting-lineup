@@ -12,7 +12,13 @@ const parentOf = (path) => path.split("/").slice(0, -1).join("/");
 function notify(colPath) {
   queueMicrotask(() => {
     listeners.forEach((l) => {
-      if (l.colPath === colPath) l.fire();
+      if (l.colPath === colPath) {
+        try {
+          l.fire();
+        } catch {
+          // Keep other listeners running if one handler throws.
+        }
+      }
     });
   });
 }
@@ -85,12 +91,44 @@ export function query(col, ...constraints) {
   return { colPath: col.path, order, wheres, limit: lim };
 }
 
-export function onSnapshot(q, cb, opts) {
+function resolveSnapshotHandler(arg2, arg3, arg4) {
+  // Match firebase/firestore overloads:
+  // onSnapshot(q, onNext)
+  // onSnapshot(q, onNext, onError)
+  // onSnapshot(q, observer)
+  // onSnapshot(q, options, onNext)
+  // onSnapshot(q, options, observer)
+  if (typeof arg2 === "function") {
+    return { onNext: arg2, onError: typeof arg3 === "function" ? arg3 : undefined };
+  }
+  if (arg2 && typeof arg2 === "object") {
+    if (typeof arg2.next === "function") {
+      return { onNext: arg2.next, onError: arg2.error };
+    }
+    if (typeof arg3 === "function") {
+      return { onNext: arg3, onError: typeof arg4 === "function" ? arg4 : undefined };
+    }
+    if (arg3 && typeof arg3.next === "function") {
+      return { onNext: arg3.next, onError: arg3.error };
+    }
+  }
+  return null;
+}
+
+export function onSnapshot(q, arg2, arg3, arg4) {
   const colPath = q.colPath || q.path;
+  const handler = resolveSnapshotHandler(arg2, arg3, arg4);
+  if (!handler) {
+    throw new TypeError("onSnapshot called with an invalid callback");
+  }
   const fire = () => {
-    const snap = snapshotOf({ colPath, order: q.order, wheres: q.wheres, limit: q.limit });
-    snap.metadata.hasPendingWrites = false;
-    cb(snap);
+    try {
+      const snap = snapshotOf({ colPath, order: q.order, wheres: q.wheres, limit: q.limit });
+      snap.metadata.hasPendingWrites = false;
+      handler.onNext(snap);
+    } catch (err) {
+      handler.onError?.(err);
+    }
   };
   const l = { colPath, fire };
   listeners.add(l);
