@@ -10,7 +10,7 @@ import { teamCol, teamDoc } from "../team.js";
 import FieldDiagram from "./FieldDiagram.jsx";
 import AtBatEditor, { updateAtBat } from "./AtBatEditor.jsx";
 import { Dialog, PromptDialog } from "./Dialog.jsx";
-import { OUT_TYPE_LABELS, RESULT_LABELS, ZONE_LABELS, formatAbResult, needsPlacement, resultChipClass, resultChipCode } from "../stats.js";
+import { GAME_RESULT_LABELS, OUT_TYPE_LABELS, OUT_TYPES, RESULT_LABELS, ZONE_LABELS, formatAbResult, needsPlacement, resultChipClass, resultChipCode } from "../stats.js";
 import { tap } from "../haptics.js";
 
 export default function GameTab({ players, games, activeGame, abByGame, showToast }) {
@@ -227,8 +227,8 @@ function AtBatLogger({ game, players, atBats, showToast }) {
             <button className="btn" onClick={() => choose({ result: "HR" })}>Home Run</button>
             <button className="btn" onClick={() => save({ result: "BB" })}>Walk</button>
             <button className="btn" onClick={() => choose({ result: "OUT" })}>Out</button>
-            <button className="btn" onClick={() => choose({ result: "ROE", outType: null })}>Reached on Error</button>
-            <button className="btn" onClick={() => choose({ result: "FC", outType: null })}>Fielder's Choice</button>
+            <button className="btn" onClick={() => choose({ result: "ROE", outType: null })}>{GAME_RESULT_LABELS.ROE}</button>
+            <button className="btn" onClick={() => choose({ result: "FC", outType: null })}>{GAME_RESULT_LABELS.FC}</button>
           </div>
         </>
       )}
@@ -237,11 +237,15 @@ function AtBatLogger({ game, players, atBats, showToast }) {
         <>
           <div className="step-label">Out — how?</div>
           <div className="btn-grid">
-            <button className="btn" onClick={() => save({ result: "OUT", outType: "K" })}>Strikeout</button>
-            <button className="btn" onClick={() => choose({ outType: "GO" })}>Ground out</button>
-            <button className="btn" onClick={() => choose({ outType: "FO" })}>Fly out</button>
-            <button className="btn" onClick={() => choose({ outType: "PO" })}>Pop-up</button>
-            <button className="btn" onClick={() => choose({ outType: "LO" })}>Line out</button>
+            {OUT_TYPES.map((o) => (
+              <button
+                key={o}
+                className="btn"
+                onClick={() => (o === "K" ? save({ result: "OUT", outType: "K" }) : choose({ outType: o }))}
+              >
+                {OUT_TYPE_LABELS[o]}
+              </button>
+            ))}
           </div>
         </>
       )}
@@ -265,7 +269,7 @@ function AtBatLogger({ game, players, atBats, showToast }) {
         <>
           <div className="step-label">Contact — {RESULT_LABELS[pending.result]}{pending.zone ? ` · ${ZONE_LABELS[pending.zone]}` : ""}</div>
           <FieldDiagram marker={pending.loc} onZone={placeBall} />
-          <p className="muted" style={{ textAlign: "center", margin: "8px 0 10px", fontSize: 13 }}>Pin shows where you placed it · tap field to adjust</p>
+          <p className="muted" style={{ textAlign: "center", margin: "8px 0 10px", fontSize: 13 }}>Pin shows where it landed · tap to adjust · how well did you drive the arc?</p>
           <div className="btn-grid cols3">
             <button className="btn" onClick={() => save({ contact: "HARD" })}>Hard</button>
             <button className="btn selected" onClick={() => save({ contact: "MED" })}>Medium</button>

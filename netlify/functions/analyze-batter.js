@@ -9,14 +9,20 @@ give plain-language, practical fixes a casual player can actually use.
 
 Pattern examples to look for:
 - Heavy pull-side or opposite-field tendency combined with weak contact
-  (late or early timing on the arc)
-- High pop-up or weak fly rate (swinging under the ball, dropping the
-  back shoulder, trying to lift)
+  (late or early on the arc — slow-pitch timing)
+- High pop-up or lazy fly rate (under the ball, dropping the back shoulder,
+  trying to lift instead of driving the arc)
 - High ground out rate to one side (rolling over, out front)
-- Strikeouts in slow pitch (overswinging or chasing bad arcs, taking
-  hittable pitches)
-- Hard contact but low average (hitting it AT people, fine, stay the
+- Strikeouts in slow pitch (overswinging, chasing bad arcs, or taking
+  hittable pitches — rare but worth flagging)
+- Hard contact but low average (hitting it AT people — fine, stay the
   course, maybe aim at gaps)
+- Safe reaches on error (ROE) or fielder's choice (FC) — counts as an
+  at-bat but not a hit; note if they're masking weak contact
+
+Result codes: 1B/2B/3B/HR are hits, BB is a walk, OUT is an out (with
+out-type o: K/GO/FO/PO/LO), ROE is reached on error, FC is fielder's
+choice (batter safe, another runner out).
 
 Rules: 120 words max. Lead with the single biggest pattern. Give one
 specific drill or swing thought per pattern. Encouraging but honest.

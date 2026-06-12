@@ -1,4 +1,5 @@
 // All stats are derived client-side from raw at-bats. Never stored.
+// Result set and labels are tuned for rec-league slow-pitch softball.
 
 export const RESULT_LABELS = {
   "1B": "Single",
@@ -9,6 +10,13 @@ export const RESULT_LABELS = {
   OUT: "Out",
   ROE: "Error",
   FC: "Fielder's Choice",
+};
+
+// Short labels for the in-game tap grid (dugout speed).
+export const GAME_RESULT_LABELS = {
+  ...RESULT_LABELS,
+  ROE: "Error (safe)",
+  FC: "FC (safe)",
 };
 
 export const HIT_RESULTS = ["1B", "2B", "3B", "HR"];
@@ -26,6 +34,9 @@ export const OUT_TYPE_LABELS = {
   LO: "Line out",
   FC: "Force out", // legacy: logged under OUT before FC became its own result
 };
+
+// Most common slow-pitch outs first (pop-ups and lazy flies are typical).
+export const OUT_TYPES = ["PO", "FO", "GO", "LO", "K"];
 
 export const ZONES = ["LF", "CF", "RF", "IF_L", "IF_M", "IF_R"];
 export const ZONE_LABELS = {

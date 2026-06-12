@@ -102,7 +102,7 @@ export default function StatsTab({ players, games, allAtBats, showToast, hasActi
 }
 
 function outMixShort(outMix) {
-  const order = ["GO", "FO", "PO", "LO", "K", "FC"];
+  const order = ["PO", "FO", "GO", "LO", "K", "FC"];
   return order.filter((k) => outMix[k]).map((k) => `${outMix[k]}${k}`).join(" ") || "—";
 }
 

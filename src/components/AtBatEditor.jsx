@@ -6,6 +6,7 @@ import { Dialog } from "./Dialog.jsx";
 import {
   CONTACT_LABELS,
   OUT_TYPE_LABELS,
+  OUT_TYPES,
   PLACEMENT_RESULTS,
   RESULT_LABELS,
   ZONE_LABELS,
@@ -14,7 +15,7 @@ import {
 import { tap } from "../haptics.js";
 
 const RESULT_OPTIONS = ["1B", "2B", "3B", "HR", "BB", "OUT", "ROE", "FC"];
-const OUT_TYPES = ["K", "GO", "FO", "PO", "LO", "FC"];
+const EDIT_OUT_TYPES = [...OUT_TYPES, "FC"]; // FC legacy on OUT records
 
 export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
   const [draft, setDraft] = useState(ab);
@@ -71,7 +72,7 @@ export default function AtBatEditor({ ab, playerName, open, onClose, onSave }) {
         <>
           <div className="step-label">Out type</div>
           <div className="btn-grid cols3" style={{ marginBottom: 10 }}>
-            {OUT_TYPES.map((o) => (
+            {EDIT_OUT_TYPES.map((o) => (
               <button key={o} className={`btn${draft.outType === o ? " selected" : ""}`} onClick={() => { tap(); set({ outType: o, loc: o === "K" ? null : draft.loc, zone: o === "K" ? null : draft.zone }); }}>
                 {OUT_TYPE_LABELS[o]}
               </button>
