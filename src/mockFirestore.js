@@ -85,7 +85,8 @@ export function query(col, ...constraints) {
   return { colPath: col.path, order, wheres, limit: lim };
 }
 
-export function onSnapshot(q, cb, opts) {
+export function onSnapshot(q, cbOrOptions, maybeCb) {
+  const cb = typeof cbOrOptions === "function" ? cbOrOptions : maybeCb;
   const colPath = q.colPath || q.path;
   const fire = () => {
     const snap = snapshotOf({ colPath, order: q.order, wheres: q.wheres, limit: q.limit });

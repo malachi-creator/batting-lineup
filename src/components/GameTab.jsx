@@ -216,9 +216,9 @@ function AtBatLogger({ game, players, atBats, showToast }) {
   };
 
   const undo = async () => {
-    if (pending.result !== null || atBats.length === 0) return;
+    if (atBats.length === 0) return;
     tap(30);
-    const last = atBats.reduce((a, b) => (a.seq > b.seq ? a : b));
+    const last = atBats.reduce((a, b) => ((a.seq ?? 0) > (b.seq ?? 0) ? a : b));
     const who = players.find((p) => p.id === last.playerId);
     await deleteDoc(doc(teamCol("games", game.id, "atBats"), last.id));
     showToast(`Undid ${who?.name || "last"}: ${formatAbResult(last)}`);
@@ -469,11 +469,8 @@ function AtBatLogger({ game, players, atBats, showToast }) {
       )}
 
       <div className="logger-footer">
-        {pending.result === null ? (
-          <button className="btn small danger" onClick={undo} disabled={atBats.length === 0}>↩ Undo</button>
-        ) : (
-          <button className="btn small" onClick={reset}>Cancel</button>
-        )}
+        <button className="btn small danger" onClick={undo} disabled={atBats.length === 0}>↩ Undo</button>
+        {step !== "result" && <button className="btn small" onClick={reset}>Cancel</button>}
         <button className="btn small" style={{ color: "var(--text-dim)" }} onClick={() => setEndConfirm(true)}>End Game</button>
       </div>
 

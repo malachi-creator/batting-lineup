@@ -110,11 +110,11 @@ export default function CatchUpTab({ gameId, playerId, players, games, showToast
     reset();
   };
 
-  const undo = () => {
+  const undo = async () => {
     if (myAtBats.length === 0) return;
     tap(30);
-    const last = myAtBats[myAtBats.length - 1];
-    deleteDoc(doc(teamCol("games", game.id, "atBats"), last.id));
+    const last = myAtBats.reduce((a, b) => ((a.seq ?? 0) > (b.seq ?? 0) ? a : b));
+    await deleteDoc(doc(teamCol("games", game.id, "atBats"), last.id));
     showToast(`Undid ${RESULT_LABELS[last.result] || "last at-bat"}`);
     reset();
   };
