@@ -43,6 +43,7 @@ export async function runAnalysis(key, endpoint, payload, abCount) {
   const data = await res.json();
   if (!data.text) throw new Error(data.error || "No analysis returned");
   const record = { text: data.text, lastAnalyzedAbCount: abCount, updatedAt: serverTimestamp() };
+  if (Array.isArray(data.order)) record.order = data.order;
   setDoc(teamDoc("analyses", key), record).catch(() => {});
   return record;
 }

@@ -1,10 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { getCachedAnalysis, runAnalysis } from "../coach.js";
 import { tap } from "../haptics.js";
+import { Dialog } from "./Dialog.jsx";
 
-export default function CoachZBlock({ cacheKey, abCount, disabled, endpoint, runLabel, loadingLabel, getPayload, showToast }) {
+export default function CoachZBlock({
+  cacheKey,
+  abCount,
+  disabled,
+  endpoint,
+  runLabel,
+  loadingLabel,
+  getPayload,
+  showToast,
+  applyLabel,
+  canApply,
+  onApply,
+}) {
   const [cached, setCached] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [confirmApply, setConfirmApply] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -13,6 +28,7 @@ export default function CoachZBlock({ cacheKey, abCount, disabled, endpoint, run
   }, [cacheKey]);
 
   const upToDate = cached && cached.lastAnalyzedAbCount === abCount;
+  const showApply = cached && canApply?.(cached);
 
   const analyze = async () => {
     tap(20);
@@ -24,6 +40,18 @@ export default function CoachZBlock({ cacheKey, abCount, disabled, endpoint, run
       showToast(e.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const apply = async () => {
+    setConfirmApply(false);
+    setApplying(true);
+    try {
+      await onApply(cached);
+    } catch (e) {
+      showToast(e.message || "Could not update lineup");
+    } finally {
+      setApplying(false);
     }
   };
 
@@ -49,6 +77,24 @@ export default function CoachZBlock({ cacheKey, abCount, disabled, endpoint, run
           {cached.text}
         </div>
       )}
+      {showApply && (
+        <button
+          className="btn primary"
+          style={{ width: "100%", marginTop: 8 }}
+          disabled={applying}
+          onClick={() => { tap(); setConfirmApply(true); }}
+        >
+          {applying ? "Updating lineup…" : applyLabel}
+        </button>
+      )}
+      <Dialog
+        open={confirmApply}
+        title="Apply Coach Z lineup?"
+        message="This updates your batting order on the roster. You can still drag to reorder afterward."
+        confirmLabel="Apply lineup"
+        onConfirm={apply}
+        onCancel={() => setConfirmApply(false)}
+      />
     </div>
   );
 }
